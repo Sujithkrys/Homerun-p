@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Wifi, Battery } from "lucide-react";
+import { Wifi } from "lucide-react";
 
 interface PhoneFrameProps {
   children: React.ReactNode;
@@ -18,25 +18,32 @@ export default function PhoneFrame({
     <div className="flex items-center justify-center p-2 sm:p-4 select-none">
       {/* Phone Mockup Frame: 375x812px */}
       <div className="relative w-[375px] h-[812px] max-h-[88vh] bg-slate-950 rounded-[46px] p-2.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] border-4 border-slate-800 ring-1 ring-slate-700/50 flex flex-col shrink-0">
-        {/* Dynamic Island / Notch + Status Bar */}
-        <div className="absolute top-2.5 left-2.5 right-2.5 z-40 px-6 pt-3 pb-1 flex items-center justify-between pointer-events-none">
+        
+        {/* Dynamic Island Pill - EXACTLY Centered at 50% */}
+        <div className="absolute top-3.5 left-1/2 -translate-x-1/2 w-24 h-5 bg-black rounded-full z-50 flex items-center justify-center pointer-events-none shadow-sm">
+          {/* Centered Camera Aperture */}
+          <div className="w-2.5 h-2.5 rounded-full bg-[#111] ring-1 ring-neutral-800/90 flex items-center justify-center">
+            <div className="w-1 h-1 rounded-full bg-[#1e293b]/90"></div>
+          </div>
+        </div>
+
+        {/* Status Bar Row (Time left, Icons right) */}
+        <div className="absolute top-2.5 left-2.5 right-2.5 z-40 px-6 pt-2.5 pb-1 flex items-center justify-between pointer-events-none">
           {/* Time */}
           <span
-            className={`text-[12px] font-semibold tracking-tight ${
+            className={`text-[12px] font-semibold tracking-tight min-w-[36px] ${
               isLightText ? "text-white" : "text-slate-900"
             }`}
           >
             9:41
           </span>
 
-          {/* Dynamic Island Pill */}
-          <div className="w-24 h-5 bg-black rounded-full flex items-center justify-end px-2 gap-1.5 shadow-xs -mt-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-slate-900/80 border border-slate-800 inline-block"></span>
-          </div>
+          {/* Invisible spacer so flex doesn't crowd center */}
+          <div className="w-24 h-5" aria-hidden="true" />
 
           {/* Signal, WiFi, Battery */}
           <div
-            className={`flex items-center gap-1.5 text-xs ${
+            className={`flex items-center justify-end gap-1.5 text-xs min-w-[36px] ${
               isLightText ? "text-white" : "text-slate-900"
             }`}
           >
