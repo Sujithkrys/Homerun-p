@@ -88,3 +88,30 @@ export interface DeliveryInfo {
   area: string;
   payment: string;
 }
+
+export type AppScreen = "home" | "ai-estimator" | "categories" | "orders" | "account";
+
+export interface ProductCategory {
+  id: string;
+  name: string;
+  icon: string; // emoji
+  productCount: number;
+  group?: string;
+}
+
+export interface BillDetails {
+  subtotal: number; // sum of cart items (incl GST)
+  discount: number; // coupon/bulk discount
+  walletApplied: number; // HomeRun Cash applied
+  deliveryCharge: number; // 0 if subtotal > 500, else 49
+  handlingCharge: number; // 0 for now
+  total: number;
+}
+
+export interface DemoOrder {
+  id: string;
+  items: CartItem[];
+  total: number;
+  date: string;
+  status: "arriving" | "delivered";
+}

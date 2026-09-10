@@ -45,6 +45,11 @@ export const QUICK_PROMPTS: QuickPrompt[] = [
     icon: <Layers className="w-3.5 h-3.5 text-teal-600" />,
     category: "Multi-Room",
   },
+  {
+    label: "Show me waterproofing products",
+    icon: <Sparkles className="w-3.5 h-3.5 text-blue-500" />,
+    category: "Waterproofing",
+  },
 ];
 
 interface QuickActionsProps {

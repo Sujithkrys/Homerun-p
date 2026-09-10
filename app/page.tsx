@@ -2,11 +2,19 @@
 
 import React, { useState } from "react";
 import ModeToggle, { DemoMode } from "@/components/ModeToggle";
-import ChatWindow from "@/components/ChatWindow";
-import MobileAppChat from "@/components/MobileAppChat";
+import WebPlatform from "@/components/WebPlatform";
+import MobileApp from "@/components/MobileApp";
 import WhatsAppChat from "@/components/WhatsAppChat";
 import PhoneFrame from "@/components/PhoneFrame";
-import { Message, CartItem, ChatResponse, Suggestion } from "@/lib/types";
+import {
+  Message,
+  CartItem,
+  ChatResponse,
+  Suggestion,
+  DemoOrder,
+  BillDetails as BillDetailsType,
+} from "@/lib/types";
+import { useNavigation } from "@/lib/useNavigation";
 import { ExternalLink, Sparkles, Building2, Clock, ShieldCheck } from "lucide-react";
 
 function getInitialGreeting(): Message {
@@ -21,9 +29,34 @@ function getInitialGreeting(): Message {
 
 export default function HomePage() {
   const [mode, setMode] = useState<DemoMode>("web");
+  const { currentScreen, navigateTo } = useNavigation("home");
+
   const [messages, setMessages] = useState<Message[]>([getInitialGreeting()]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Platform Cart Enhancements State
+  const [unloadingService, setUnloadingService] = useState(false);
+  const [gstin, setGstin] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [demoOrder, setDemoOrder] = useState<DemoOrder | null>(null);
+
+  // Calculate Bill Details live
+  const calculateBillDetails = (cartItems: CartItem[]): BillDetailsType => {
+    const rawSubtotal = cartItems.reduce((sum, item) => sum + item.total, 0);
+    const subtotalWithUnloading = unloadingService ? rawSubtotal + 199 : rawSubtotal;
+    const deliveryCharge = rawSubtotal === 0 ? 0 : rawSubtotal >= 500 ? 0 : 49;
+    return {
+      subtotal: subtotalWithUnloading,
+      discount: 0,
+      walletApplied: 0,
+      deliveryCharge,
+      handlingCharge: 0,
+      total: subtotalWithUnloading + deliveryCharge,
+    };
+  };
+
+  const currentBill = calculateBillDetails(cart);
 
   // Send a user message and trigger API
   const handleSendMessage = async (userText: string) => {
@@ -201,52 +234,60 @@ export default function HomePage() {
     setCart([]);
   };
 
+  // Place order flow
+  const handlePlaceOrder = () => {
+    const bill = calculateBillDetails(cart);
+    const newOrder: DemoOrder = {
+      id: "HR-" + Math.floor(100000 + Math.random() * 900000),
+      items: [...cart],
+      total: bill.total,
+      date: new Date().toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
+      status: "arriving",
+    };
+
+    setDemoOrder(newOrder);
+    setCart([]);
+    setUnloadingService(false);
+    navigateTo("orders");
+  };
+
   // Reset conversation
   const handleResetChat = () => {
     setMessages([getInitialGreeting()]);
-    setCart([]);
   };
 
-  // WhatsApp Interactive Action Button Handlers
-  const handleWhatsAppActionClick = (
-    action: "view-cart" | "checkout" | "add-more"
-  ) => {
+  // WhatsApp in-chat interactive action handlers
+  const handleWhatsAppActionClick = (action: "view-cart" | "checkout" | "add-more") => {
     const currentTime = new Date().toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
 
     if (action === "view-cart") {
-      if (cart.length === 0) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `asst-${Date.now()}`,
-            role: "assistant",
-            content:
-              "🛒 *Your Cart is Empty*\n\nTell me what materials you need (e.g., UltraTech cement, Roff tile adhesive, Asian Paints) to add them.",
-            timestamp: currentTime,
-          },
-        ]);
-        return;
-      }
-
-      const total = cart.reduce((sum, item) => sum + item.total, 0);
-      const itemsText = cart
-        .map(
-          (item, idx) =>
-            `${idx + 1}. ${item.name} × ${item.quantity} ${item.unit} — ₹${item.total.toLocaleString("en-IN")}`
-        )
-        .join("\n");
-
       setMessages((prev) => [
         ...prev,
         {
           id: `asst-${Date.now()}`,
           role: "assistant",
-          content: `🛒 *Your Cart Summary*\n${itemsText}\n\n💰 *Total:* ₹${total.toLocaleString(
-            "en-IN"
-          )}\n🚚 Free Delivery in Bangalore | ⚡ 60 min`,
+          content:
+            cart.length > 0
+              ? `🛒 *Current Site Cart:* (${cart.reduce((s, i) => s + i.quantity, 0)} items)\n\n` +
+                cart
+                  .map(
+                    (item, idx) =>
+                      `${idx + 1}. *${item.name}* × ${item.quantity} ${item.unit} — ₹${item.total.toLocaleString(
+                        "en-IN"
+                      )}`
+                  )
+                  .join("\n") +
+                `\n\n💰 *Total:* ₹${cart
+                  .reduce((s, i) => s + i.total, 0)
+                  .toLocaleString("en-IN")}\n\nType *'checkout'* to receive an instant payment link or *'remove [item]'* to edit.`
+              : "Your cart is currently empty. Ask for cement, tiling adhesive, or a full renovation estimate to begin!",
           cart_items: cart,
           timestamp: currentTime,
         },
@@ -272,7 +313,7 @@ export default function HomePage() {
           id: `asst-${Date.now()}`,
           role: "assistant",
           content:
-            "Sure! What else do you need for your site today?\n\n• **Tile Spacers (3mm)** — ₹90/pack\n• **Roff Rainbow Grout (1kg)** — ₹85/pack\n• **Birla White Wall Putty (40kg)** — ₹940/bag\n• **Finolex FR 2.5 sqmm Wire** — ₹2,850/roll\n\nJust type the quantity or click a quick prompt below!",
+            "Sure! What else do you need for your site today?\n\n• **Tile Spacers (3mm)** — ₹60/pack\n• **Roff Rainbow Grout (1kg)** — ₹160/pack\n• **Birla White Wall Putty (40kg)** — ₹890/bag\n• **Finolex FR 2.5 sqmm Wire** — ₹2,850/roll\n\nJust type the quantity or click a quick prompt below!",
           timestamp: currentTime,
         },
       ]);
@@ -319,7 +360,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Mode Switcher Pill */}
+          {/* 3-Mode Switcher Pill */}
           <ModeToggle
             mode={mode}
             onModeChange={setMode}
@@ -331,7 +372,9 @@ export default function HomePage() {
       {/* Main Interactive Demo Container */}
       <section className="flex-1 max-w-6xl w-full mx-auto p-2 sm:p-4 flex flex-col items-center justify-center">
         {mode === "web" && (
-          <ChatWindow
+          <WebPlatform
+            currentScreen={currentScreen}
+            onNavigate={navigateTo}
             messages={messages}
             cart={cart}
             isLoading={isLoading}
@@ -341,12 +384,23 @@ export default function HomePage() {
             onClearCart={handleClearCart}
             onResetChat={handleResetChat}
             onAddSuggestion={handleAddSuggestionToCart}
+            unloadingService={unloadingService}
+            setUnloadingService={setUnloadingService}
+            gstin={gstin}
+            setGstin={setGstin}
+            couponCode={couponCode}
+            setCouponCode={setCouponCode}
+            demoOrder={demoOrder}
+            onPlaceOrder={handlePlaceOrder}
+            bill={currentBill}
           />
         )}
 
         {mode === "mobile" && (
           <PhoneFrame statusBarTheme="light">
-            <MobileAppChat
+            <MobileApp
+              currentScreen={currentScreen}
+              onNavigate={navigateTo}
               messages={messages}
               cart={cart}
               isLoading={isLoading}
@@ -356,6 +410,15 @@ export default function HomePage() {
               onClearCart={handleClearCart}
               onResetChat={handleResetChat}
               onAddSuggestion={handleAddSuggestionToCart}
+              unloadingService={unloadingService}
+              setUnloadingService={setUnloadingService}
+              gstin={gstin}
+              setGstin={setGstin}
+              couponCode={couponCode}
+              setCouponCode={setCouponCode}
+              demoOrder={demoOrder}
+              onPlaceOrder={handlePlaceOrder}
+              bill={currentBill}
             />
           </PhoneFrame>
         )}
@@ -375,7 +438,7 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Footer as requested in the prompt */}
+      {/* Footer */}
       <footer className="w-full bg-white border-t border-slate-200 py-3.5 px-4 text-center text-xs text-slate-500">
         <p className="flex items-center justify-center flex-wrap gap-1.5 font-medium">
           <span>Built by</span>
@@ -388,7 +451,7 @@ export default function HomePage() {
             Sujith Thalathoty <ExternalLink className="w-3 h-3 inline" />
           </a>
           <span>|</span>
-          <span className="text-slate-700">AI Product Demo for HomeRun</span>
+          <span className="text-slate-700">Full Platform Experience with AI Estimator for HomeRun</span>
           <span className="text-slate-400 font-normal">
             (Quick Commerce Construction Materials • Bangalore)
           </span>

@@ -85,13 +85,13 @@ export default function ModeToggle({
         {mode === "web" && (
           <span className="inline-flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-homerun-green"></span>
-            How the AI assistant looks on HomeRun&apos;s website — desktop view with live cart
+            How the AI assistant looks on HomeRun&apos;s website — full platform with AI estimator
           </span>
         )}
         {mode === "mobile" && (
           <span className="inline-flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-homerun-green"></span>
-            How it looks in the HomeRun mobile app — same features, phone-sized
+            How it looks in the HomeRun mobile app — full platform with AI estimator
           </span>
         )}
         {mode === "whatsapp" && (
