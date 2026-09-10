@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Message, CartItem } from "@/lib/types";
+import { Message, CartItem, Suggestion } from "@/lib/types";
 import MessageBubble from "./MessageBubble";
 import QuickActions from "./QuickActions";
 import {
@@ -29,6 +29,7 @@ interface MobileAppChatProps {
   onRemoveItem: (productId: string) => void;
   onClearCart: () => void;
   onResetChat?: () => void;
+  onAddSuggestion?: (suggestion: Suggestion) => void;
 }
 
 export default function MobileAppChat({
@@ -40,6 +41,7 @@ export default function MobileAppChat({
   onRemoveItem,
   onClearCart,
   onResetChat,
+  onAddSuggestion,
 }: MobileAppChatProps) {
   const [inputText, setInputText] = useState("");
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
@@ -166,6 +168,7 @@ export default function MobileAppChat({
                 message={msg}
                 variant="in-app"
                 allCartItems={cart}
+                onAddSuggestion={onAddSuggestion}
               />
             ))}
 

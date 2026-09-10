@@ -1,14 +1,18 @@
 "use client";
 
 import React from "react";
-import { Message, CartItem } from "@/lib/types";
-import { CheckCheck, ShoppingBag, CreditCard, PlusCircle, Calculator, ExternalLink } from "lucide-react";
+import { Message, CartItem, Suggestion } from "@/lib/types";
+import { CheckCheck, ShoppingBag, CreditCard, PlusCircle, Calculator } from "lucide-react";
+import ProjectEstimateCard from "./ProjectEstimateCard";
+import SuggestionChips from "./SuggestionChips";
+import DownloadEstimateButton from "./DownloadEstimateButton";
 
 interface MessageBubbleProps {
   message: Message;
   variant: "in-app" | "whatsapp";
   allCartItems?: CartItem[];
   onActionClick?: (action: "view-cart" | "checkout" | "add-more") => void;
+  onAddSuggestion?: (suggestion: Suggestion) => void;
 }
 
 // Simple markdown formatter helper for bold, bullets, and line breaks
@@ -76,6 +80,7 @@ export default function MessageBubble({
   variant,
   allCartItems = [],
   onActionClick,
+  onAddSuggestion,
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const hasCartItems = message.cart_items && message.cart_items.length > 0;
@@ -94,7 +99,7 @@ export default function MessageBubble({
         }`}
       >
         <div
-          className={`max-w-[85%] sm:max-w-[78%] px-3.5 py-2.5 rounded-lg text-[13.5px] shadow-xs relative transition-all ${
+          className={`max-w-[88%] sm:max-w-[80%] px-3.5 py-2.5 rounded-lg text-[13.5px] shadow-xs relative transition-all ${
             isUser
               ? "bg-[#dcf8c6] text-slate-900 rounded-tr-none wa-bubble-right"
               : "bg-white text-slate-800 rounded-tl-none wa-bubble-left border border-slate-100/50"
@@ -104,6 +109,23 @@ export default function MessageBubble({
           <div className="text-[13.5px] leading-relaxed break-words">
             {renderFormattedText(message.content)}
           </div>
+
+          {/* 1. Multi-Room Project Estimate (WhatsApp) */}
+          {!isUser && message.project_estimate && (
+            <ProjectEstimateCard
+              projectEstimate={message.project_estimate}
+              variant="whatsapp"
+            />
+          )}
+
+          {/* 2. Smart Suggestions (WhatsApp) */}
+          {!isUser && message.suggestions && message.suggestions.length > 0 && (
+            <SuggestionChips
+              suggestions={message.suggestions}
+              onAddSuggestion={onAddSuggestion}
+              variant="whatsapp"
+            />
+          )}
 
           {/* In-Bubble WhatsApp Cart Card (When Cart Items are Present) */}
           {!isUser && hasCartItems && (
@@ -135,13 +157,21 @@ export default function MessageBubble({
                 <span>⚡ 60 min Bangalore dispatch</span>
               </div>
 
+              {/* 3. Download Estimate Button (WhatsApp) */}
+              <DownloadEstimateButton
+                items={itemsToDisplay}
+                projectEstimate={message.project_estimate}
+                estimationSummary={message.estimation_summary}
+                variant="whatsapp"
+              />
+
               {/* WhatsApp Interactive Action Buttons */}
               {onActionClick && (
                 <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex flex-wrap gap-1.5">
                   <button
                     type="button"
                     onClick={() => onActionClick("view-cart")}
-                    className="flex-1 min-w-[90px] py-1 px-2 text-[12px] font-medium text-emerald-800 bg-white border border-emerald-300 rounded shadow-2xs hover:bg-emerald-50 active:scale-95 transition-all text-center flex items-center justify-center gap-1"
+                    className="flex-1 min-w-[90px] py-1 px-2 text-[12px] font-medium text-emerald-800 bg-white border border-emerald-300 rounded shadow-2xs hover:bg-emerald-50 active:scale-95 transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
                   >
                     <ShoppingBag className="w-3 h-3" />
                     View Cart
@@ -149,7 +179,7 @@ export default function MessageBubble({
                   <button
                     type="button"
                     onClick={() => onActionClick("checkout")}
-                    className="flex-1 min-w-[90px] py-1 px-2 text-[12px] font-semibold text-white bg-[#075e54] rounded shadow-2xs hover:bg-[#0c6c61] active:scale-95 transition-all text-center flex items-center justify-center gap-1"
+                    className="flex-1 min-w-[90px] py-1 px-2 text-[12px] font-semibold text-white bg-[#075e54] rounded shadow-2xs hover:bg-[#0c6c61] active:scale-95 transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
                   >
                     <CreditCard className="w-3 h-3" />
                     Checkout
@@ -157,7 +187,7 @@ export default function MessageBubble({
                   <button
                     type="button"
                     onClick={() => onActionClick("add-more")}
-                    className="flex-1 min-w-[90px] py-1 px-2 text-[12px] font-medium text-slate-700 bg-white border border-slate-300 rounded shadow-2xs hover:bg-slate-50 active:scale-95 transition-all text-center flex items-center justify-center gap-1"
+                    className="flex-1 min-w-[90px] py-1 px-2 text-[12px] font-medium text-slate-700 bg-white border border-slate-300 rounded shadow-2xs hover:bg-slate-50 active:scale-95 transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
                   >
                     <PlusCircle className="w-3 h-3" />
                     Add More
@@ -179,7 +209,7 @@ export default function MessageBubble({
     );
   }
 
-  // ================= IN-APP VARIANT =================
+  // ================= IN-APP / WEB / MOBILE APP VARIANT =================
   return (
     <div
       className={`flex flex-col w-full my-2 ${
@@ -187,7 +217,7 @@ export default function MessageBubble({
       }`}
     >
       <div
-        className={`max-w-[85%] sm:max-w-[78%] px-4 py-3 rounded-2xl text-sm shadow-xs transition-all ${
+        className={`max-w-[88%] sm:max-w-[80%] px-4 py-3 rounded-2xl text-sm shadow-xs transition-all ${
           isUser
             ? "bg-[#d4edbc] text-slate-900 rounded-br-xs font-normal"
             : "bg-white text-slate-800 rounded-bl-xs border border-slate-200/80"
@@ -198,8 +228,8 @@ export default function MessageBubble({
           {renderFormattedText(message.content)}
         </div>
 
-        {/* Estimation Summary Badge if available */}
-        {!isUser && message.estimation_summary && (
+        {/* Single Estimation Summary Badge if available & not a multi-room project */}
+        {!isUser && message.estimation_summary && !message.project_estimate && (
           <div className="mt-3 p-2.5 bg-homerun-green-light/60 border border-homerun-green/20 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-homerun-green/10 flex items-center justify-center text-homerun-green">
@@ -207,7 +237,7 @@ export default function MessageBubble({
               </div>
               <div>
                 <p className="text-[11px] uppercase tracking-wider font-bold text-homerun-green-dark">
-                  {message.estimation_summary.project_type}
+                  {message.estimation_summary.project_type.replace(/_/g, " ")}
                 </p>
                 {message.estimation_summary.area_sqft && (
                   <p className="text-xs text-slate-600">
@@ -223,6 +253,33 @@ export default function MessageBubble({
               </p>
             </div>
           </div>
+        )}
+
+        {/* 1. Multi-Room Project Estimate Card */}
+        {!isUser && message.project_estimate && (
+          <ProjectEstimateCard
+            projectEstimate={message.project_estimate}
+            variant="in-app"
+          />
+        )}
+
+        {/* 2. Smart Cross-Sell Suggestions */}
+        {!isUser && message.suggestions && message.suggestions.length > 0 && (
+          <SuggestionChips
+            suggestions={message.suggestions}
+            onAddSuggestion={onAddSuggestion}
+            variant="in-app"
+          />
+        )}
+
+        {/* 3. Download Estimate Button */}
+        {!isUser && (
+          <DownloadEstimateButton
+            items={itemsToDisplay}
+            projectEstimate={message.project_estimate}
+            estimationSummary={message.estimation_summary}
+            variant="in-app"
+          />
         )}
 
         {/* Timestamp */}

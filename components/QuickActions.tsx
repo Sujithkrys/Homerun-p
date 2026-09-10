@@ -35,6 +35,16 @@ export const QUICK_PROMPTS: QuickPrompt[] = [
     icon: <Package className="w-3.5 h-3.5 text-emerald-600" />,
     category: "Adhesive",
   },
+  {
+    label: "Estimate full renovation for 2BHK flat",
+    icon: <Sparkles className="w-3.5 h-3.5 text-emerald-600" />,
+    category: "Renovation",
+  },
+  {
+    label: "Tile my 2 bathrooms + paint all rooms",
+    icon: <Layers className="w-3.5 h-3.5 text-teal-600" />,
+    category: "Multi-Room",
+  },
 ];
 
 interface QuickActionsProps {

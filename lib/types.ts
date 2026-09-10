@@ -14,10 +14,36 @@ export interface EstimationSummary {
   total_cost: number;
 }
 
+export interface ProjectRoom {
+  room_name: string;          // "Master Bathroom", "Bedroom 1", etc.
+  task_type: string;          // "tiling", "painting", "electrical", "plumbing"
+  area_sqft: number | null;
+  cart_items: CartItem[];
+  room_total: number;
+}
+
+export interface ProjectEstimate {
+  project_name: string;       // "2BHK Full Renovation"
+  rooms: ProjectRoom[];
+  grand_total: number;
+  savings_on_bulk: number;    // How much they save from bulk pricing
+}
+
+export interface Suggestion {
+  product_id: string;
+  name: string;
+  reason: string;
+  estimated_qty: number;
+  unit: string;
+  unit_price: number;
+}
+
 export interface ChatResponse {
   message: string;
   cart_items: CartItem[];
   estimation_summary: EstimationSummary | null;
+  project_estimate: ProjectEstimate | null;
+  suggestions: Suggestion[];
 }
 
 export interface Message {
@@ -26,6 +52,8 @@ export interface Message {
   content: string;
   cart_items?: CartItem[];
   estimation_summary?: EstimationSummary | null;
+  project_estimate?: ProjectEstimate | null;
+  suggestions?: Suggestion[];
   timestamp?: string;
   isQuickReplyAction?: boolean;
 }

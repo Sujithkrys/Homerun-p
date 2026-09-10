@@ -6,7 +6,7 @@ import ChatWindow from "@/components/ChatWindow";
 import MobileAppChat from "@/components/MobileAppChat";
 import WhatsAppChat from "@/components/WhatsAppChat";
 import PhoneFrame from "@/components/PhoneFrame";
-import { Message, CartItem, ChatResponse } from "@/lib/types";
+import { Message, CartItem, ChatResponse, Suggestion } from "@/lib/types";
 import { ExternalLink, Sparkles, Building2, Clock, ShieldCheck } from "lucide-react";
 
 function getInitialGreeting(): Message {
@@ -117,6 +117,8 @@ export default function HomePage() {
         content: data.message || "I have received your request.",
         cart_items: data.cart_items || [],
         estimation_summary: data.estimation_summary || null,
+        project_estimate: data.project_estimate || null,
+        suggestions: data.suggestions || [],
         timestamp: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -136,6 +138,38 @@ export default function HomePage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Direct 1-click addition of cross-sell suggestions
+  const handleAddSuggestionToCart = (suggestion: Suggestion) => {
+    const newItem: CartItem = {
+      product_id: suggestion.product_id,
+      name: suggestion.name,
+      quantity: suggestion.estimated_qty,
+      unit: suggestion.unit,
+      unit_price: suggestion.unit_price,
+      total: suggestion.estimated_qty * suggestion.unit_price,
+      reason: suggestion.reason,
+    };
+
+    setCart((prevCart) => {
+      const updated = [...prevCart];
+      const existingIndex = updated.findIndex(
+        (item) => item.product_id === newItem.product_id
+      );
+      if (existingIndex > -1) {
+        const current = updated[existingIndex];
+        const combinedQty = current.quantity + newItem.quantity;
+        updated[existingIndex] = {
+          ...current,
+          quantity: combinedQty,
+          total: combinedQty * current.unit_price,
+        };
+      } else {
+        updated.push(newItem);
+      }
+      return updated;
+    });
   };
 
   // Cart quantity updates
@@ -306,6 +340,7 @@ export default function HomePage() {
             onRemoveItem={handleRemoveItem}
             onClearCart={handleClearCart}
             onResetChat={handleResetChat}
+            onAddSuggestion={handleAddSuggestionToCart}
           />
         )}
 
@@ -320,6 +355,7 @@ export default function HomePage() {
               onRemoveItem={handleRemoveItem}
               onClearCart={handleClearCart}
               onResetChat={handleResetChat}
+              onAddSuggestion={handleAddSuggestionToCart}
             />
           </PhoneFrame>
         )}
@@ -333,6 +369,7 @@ export default function HomePage() {
               onSendMessage={handleSendMessage}
               onActionClick={handleWhatsAppActionClick}
               onResetChat={handleResetChat}
+              onAddSuggestion={handleAddSuggestionToCart}
             />
           </PhoneFrame>
         )}

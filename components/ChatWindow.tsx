@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Message, CartItem } from "@/lib/types";
+import { Message, CartItem, Suggestion } from "@/lib/types";
 import MessageBubble from "./MessageBubble";
 import CartSidebar from "./CartSidebar";
 import QuickActions from "./QuickActions";
@@ -17,6 +17,7 @@ interface ChatWindowProps {
   onRemoveItem: (productId: string) => void;
   onClearCart: () => void;
   onResetChat?: () => void;
+  onAddSuggestion?: (suggestion: Suggestion) => void;
 }
 
 export default function ChatWindow({
@@ -28,6 +29,7 @@ export default function ChatWindow({
   onRemoveItem,
   onClearCart,
   onResetChat,
+  onAddSuggestion,
 }: ChatWindowProps) {
   const [inputText, setInputText] = useState("");
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
@@ -58,42 +60,38 @@ export default function ChatWindow({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-bold tracking-tight text-white font-display">
-                HomeRun AI Assistant
-              </h1>
-              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-homerun-green-dark/60 text-white/90 border border-white/10">
-                ⚡ 60m Delivery
+              <h2 className="font-bold text-base tracking-tight leading-none">HomeRun</h2>
+              <span className="text-[10px] uppercase font-bold tracking-widest bg-emerald-800/80 text-homerun-yellow px-1.5 py-0.5 rounded">
+                AI Assistant
               </span>
             </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 online-pulse"></span>
-              <span className="text-xs text-emerald-100 font-medium">
-                Online • Bangalore Hub
-              </span>
-            </div>
+            <p className="text-xs text-emerald-100/90 font-medium mt-0.5">
+              Bangalore site delivery in 60 minutes
+            </p>
           </div>
         </div>
 
-        {/* Right Header: Reset & Mobile Cart Toggle */}
+        {/* Right Header Actions */}
         <div className="flex items-center gap-2">
+          {/* Reset Chat Button */}
           {onResetChat && (
             <button
               type="button"
               onClick={onResetChat}
-              className="p-2 text-emerald-100 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-xs flex items-center gap-1"
+              className="px-2.5 py-1.5 text-xs text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-colors flex items-center gap-1.5"
               title="Reset conversation"
             >
-              <RefreshCw className="w-4 h-4" />
-              <span className="hidden md:inline">Reset</span>
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Reset</span>
             </button>
           )}
 
-          {/* Cart Icon Badge (Visible on all, toggles drawer on mobile) */}
+          {/* Cart Counter Button (Mobile Drawer Trigger) */}
           <button
             type="button"
             onClick={() => setIsMobileCartOpen(!isMobileCartOpen)}
-            className="relative p-2 text-white bg-homerun-green-dark hover:bg-homerun-green-dark/80 rounded-xl transition-all shadow-xs flex items-center gap-2 md:hidden"
-            aria-label="View Cart"
+            className="md:hidden relative p-2 text-white bg-homerun-green-dark hover:bg-homerun-green-dark/80 rounded-xl transition-all shadow-xs"
+            aria-label="Toggle cart"
           >
             <ShoppingCart className="w-5 h-5" />
             {totalCartCount > 0 && (
@@ -137,6 +135,7 @@ export default function ChatWindow({
                     message={msg}
                     variant="in-app"
                     allCartItems={cart}
+                    onAddSuggestion={onAddSuggestion}
                   />
                 ))}
 

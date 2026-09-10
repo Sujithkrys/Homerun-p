@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Message, CartItem } from "@/lib/types";
+import { Message, CartItem, Suggestion } from "@/lib/types";
 import MessageBubble from "./MessageBubble";
 import QuickActions from "./QuickActions";
 import {
@@ -23,6 +23,7 @@ interface WhatsAppChatProps {
   onSendMessage: (text: string) => void;
   onActionClick: (action: "view-cart" | "checkout" | "add-more") => void;
   onResetChat?: () => void;
+  onAddSuggestion?: (suggestion: Suggestion) => void;
 }
 
 export default function WhatsAppChat({
@@ -32,6 +33,7 @@ export default function WhatsAppChat({
   onSendMessage,
   onActionClick,
   onResetChat,
+  onAddSuggestion,
 }: WhatsAppChatProps) {
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -137,6 +139,7 @@ export default function WhatsAppChat({
             variant="whatsapp"
             allCartItems={cart}
             onActionClick={onActionClick}
+            onAddSuggestion={onAddSuggestion}
           />
         ))}
 
