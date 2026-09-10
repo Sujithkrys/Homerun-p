@@ -1,0 +1,102 @@
+"use client";
+
+import React from "react";
+import { Wifi, Battery } from "lucide-react";
+
+interface PhoneFrameProps {
+  children: React.ReactNode;
+  statusBarTheme?: "light" | "dark";
+}
+
+export default function PhoneFrame({
+  children,
+  statusBarTheme = "light",
+}: PhoneFrameProps) {
+  const isLightText = statusBarTheme === "light";
+
+  return (
+    <div className="flex items-center justify-center p-2 sm:p-4 select-none">
+      {/* Phone Mockup Frame: 375x812px */}
+      <div className="relative w-[375px] h-[812px] max-h-[88vh] bg-slate-950 rounded-[46px] p-2.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] border-4 border-slate-800 ring-1 ring-slate-700/50 flex flex-col shrink-0">
+        {/* Dynamic Island / Notch + Status Bar */}
+        <div className="absolute top-2.5 left-2.5 right-2.5 z-40 px-6 pt-3 pb-1 flex items-center justify-between pointer-events-none">
+          {/* Time */}
+          <span
+            className={`text-[12px] font-semibold tracking-tight ${
+              isLightText ? "text-white" : "text-slate-900"
+            }`}
+          >
+            9:41
+          </span>
+
+          {/* Dynamic Island Pill */}
+          <div className="w-24 h-5 bg-black rounded-full flex items-center justify-end px-2 gap-1.5 shadow-xs -mt-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-900/80 border border-slate-800 inline-block"></span>
+          </div>
+
+          {/* Signal, WiFi, Battery */}
+          <div
+            className={`flex items-center gap-1.5 text-xs ${
+              isLightText ? "text-white" : "text-slate-900"
+            }`}
+          >
+            {/* Cellular bars */}
+            <div className="flex items-end gap-0.5 h-2.5">
+              <span
+                className={`w-0.5 h-1 rounded-xs ${
+                  isLightText ? "bg-white" : "bg-slate-900"
+                }`}
+              ></span>
+              <span
+                className={`w-0.5 h-1.5 rounded-xs ${
+                  isLightText ? "bg-white" : "bg-slate-900"
+                }`}
+              ></span>
+              <span
+                className={`w-0.5 h-2 rounded-xs ${
+                  isLightText ? "bg-white" : "bg-slate-900"
+                }`}
+              ></span>
+              <span
+                className={`w-0.5 h-2.5 rounded-xs ${
+                  isLightText ? "bg-white" : "bg-slate-900"
+                }`}
+              ></span>
+            </div>
+
+            {/* WiFi */}
+            <Wifi className="w-3 h-3 stroke-[2.5]" />
+
+            {/* Battery */}
+            <div className="flex items-center">
+              <div
+                className={`w-5 h-2.5 rounded-[3px] border px-0.5 flex items-center ${
+                  isLightText ? "border-white" : "border-slate-900"
+                }`}
+              >
+                <div
+                  className={`w-full h-1.5 rounded-[1px] ${
+                    isLightText ? "bg-white" : "bg-slate-900"
+                  }`}
+                ></div>
+              </div>
+              <div
+                className={`w-0.5 h-1 rounded-r-xs -ml-px ${
+                  isLightText ? "bg-white" : "bg-slate-900"
+                }`}
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Screen Content */}
+        <div className="relative w-full h-full bg-white rounded-[36px] overflow-hidden flex flex-col shadow-inner">
+          {children}
+
+          {/* Home Indicator Bar */}
+          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-32 h-1 bg-slate-900/40 rounded-full z-40 pointer-events-none"></div>
+        </div>
+      </div>
+    </div>
+  );
+}

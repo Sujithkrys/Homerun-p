@@ -3,7 +3,9 @@
 import React, { useState } from "react";
 import ModeToggle, { DemoMode } from "@/components/ModeToggle";
 import ChatWindow from "@/components/ChatWindow";
+import MobileAppChat from "@/components/MobileAppChat";
 import WhatsAppChat from "@/components/WhatsAppChat";
+import PhoneFrame from "@/components/PhoneFrame";
 import { Message, CartItem, ChatResponse } from "@/lib/types";
 import { ExternalLink, Sparkles, Building2, Clock, ShieldCheck } from "lucide-react";
 
@@ -18,7 +20,7 @@ function getInitialGreeting(): Message {
 }
 
 export default function HomePage() {
-  const [mode, setMode] = useState<DemoMode>("in-app");
+  const [mode, setMode] = useState<DemoMode>("web");
   const [messages, setMessages] = useState<Message[]>([getInitialGreeting()]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -293,8 +295,8 @@ export default function HomePage() {
       </header>
 
       {/* Main Interactive Demo Container */}
-      <section className="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-6 flex flex-col items-center justify-center">
-        {mode === "in-app" ? (
+      <section className="flex-1 max-w-6xl w-full mx-auto p-2 sm:p-4 flex flex-col items-center justify-center">
+        {mode === "web" && (
           <ChatWindow
             messages={messages}
             cart={cart}
@@ -305,15 +307,34 @@ export default function HomePage() {
             onClearCart={handleClearCart}
             onResetChat={handleResetChat}
           />
-        ) : (
-          <WhatsAppChat
-            messages={messages}
-            cart={cart}
-            isLoading={isLoading}
-            onSendMessage={handleSendMessage}
-            onActionClick={handleWhatsAppActionClick}
-            onResetChat={handleResetChat}
-          />
+        )}
+
+        {mode === "mobile" && (
+          <PhoneFrame statusBarTheme="light">
+            <MobileAppChat
+              messages={messages}
+              cart={cart}
+              isLoading={isLoading}
+              onSendMessage={handleSendMessage}
+              onUpdateQuantity={handleUpdateQuantity}
+              onRemoveItem={handleRemoveItem}
+              onClearCart={handleClearCart}
+              onResetChat={handleResetChat}
+            />
+          </PhoneFrame>
+        )}
+
+        {mode === "whatsapp" && (
+          <PhoneFrame statusBarTheme="light">
+            <WhatsAppChat
+              messages={messages}
+              cart={cart}
+              isLoading={isLoading}
+              onSendMessage={handleSendMessage}
+              onActionClick={handleWhatsAppActionClick}
+              onResetChat={handleResetChat}
+            />
+          </PhoneFrame>
         )}
       </section>
 

@@ -49,9 +49,9 @@ export default function WhatsAppChat({
   };
 
   return (
-    <div className="w-full max-w-[460px] mx-auto bg-white rounded-3xl shadow-2xl border border-slate-300/80 overflow-hidden flex flex-col h-[780px] max-h-[90vh]">
-      {/* WhatsApp Header (#075e54) */}
-      <div className="bg-[#075e54] text-white px-3.5 py-2.5 flex items-center justify-between shrink-0 shadow-md">
+    <div className="w-full h-full bg-white overflow-hidden flex flex-col relative">
+      {/* WhatsApp Header (#075e54) - pt-11 for status bar clearance */}
+      <div className="bg-[#075e54] text-white px-3.5 pt-11 pb-2.5 flex items-center justify-between shrink-0 shadow-xs select-none">
         <div className="flex items-center gap-2">
           {/* Back arrow */}
           <button
@@ -164,7 +164,7 @@ export default function WhatsAppChat({
       {/* WhatsApp Input Bar */}
       <form
         onSubmit={handleSubmit}
-        className="p-2 bg-[#f0f2f5] border-t border-slate-200 flex items-center gap-1.5 shrink-0"
+        className="p-2 pb-6 bg-[#f0f2f5] border-t border-slate-200 flex items-center gap-1.5 shrink-0"
       >
         <div className="flex items-center gap-1 text-[#54656f] px-1">
           <button
