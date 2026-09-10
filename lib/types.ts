@@ -33,12 +33,30 @@ export interface Message {
 export interface ProductCatalogItem {
   id: string;
   name: string;
-  category: "Cement" | "Adhesives & Grout" | "Paints & Wall Care" | "Electricals" | "Plumbing & Sanitaries" | "Steel & Hardware";
   brand: string;
-  unit: string;
+  pack_size: string;
+  mrp: number;
   price: number;
-  description: string;
-  specifications: string;
-  in_stock: boolean;
-  delivery_time_mins: number;
+  bulk_price: number | null;
+  unit: string;
+  coverage?: string;
+  tags?: string[];
+  category?: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  products: ProductCatalogItem[];
+}
+
+export interface DeliveryInfo {
+  promise: string;
+  min_order: number;
+  free_delivery_above: number;
+  cashback: string;
+  hours: string;
+  area: string;
+  payment: string;
 }
