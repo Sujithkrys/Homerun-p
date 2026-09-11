@@ -321,12 +321,12 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col justify-between bg-slate-100/70 antialiased selection:bg-homerun-yellow/40">
-      {/* 1. Minimal Top Bar (Thin line, max 36px tall) */}
-      <header className="h-9 shrink-0 bg-white border-b border-slate-200/80 px-4 flex items-center justify-between select-none z-40">
+    <main className="h-screen max-h-screen w-screen overflow-hidden flex flex-col justify-between bg-slate-100/70 antialiased selection:bg-homerun-yellow/40">
+      {/* 1. Unified Single Top Bar (No empty space after name, sleek 44px) */}
+      <header className="h-11 shrink-0 bg-white border-b border-slate-200/80 px-4 flex items-center justify-between select-none z-40">
         {/* Brand Logo & Name */}
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-homerun-yellow flex items-center justify-center text-homerun-green font-black text-xs shadow-2xs">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="w-7 h-7 rounded-lg bg-homerun-yellow flex items-center justify-center text-homerun-green font-black text-xs shadow-2xs">
             HR
           </div>
           <a
@@ -337,14 +337,20 @@ export default function HomePage() {
           >
             HomeRun <span className="text-homerun-green">AI Assistant</span>
           </a>
-          <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">
-            • 60-Min Construction Materials (Bangalore)
-          </span>
+        </div>
+
+        {/* 3-Mode Switcher right in header bar */}
+        <div className="flex items-center justify-center">
+          <ModeToggle
+            mode={mode}
+            onModeChange={setMode}
+            cartItemCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
+          />
         </div>
 
         {/* Creator Link */}
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
-          <span>Built by</span>
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium shrink-0">
+          <span className="hidden sm:inline">Built by</span>
           <a
             href="https://linkedin.com/in/thalathotysujith"
             target="_blank"
@@ -356,19 +362,11 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* 2. Compact Mode Switcher Pill Container */}
-      <div className="shrink-0 bg-white/90 border-b border-slate-200/60 z-30">
-        <ModeToggle
-          mode={mode}
-          onModeChange={setMode}
-          cartItemCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
-        />
-      </div>
-
-      {/* 3. Main Interactive Demo Area (Comfortable full-size frame display) */}
-      <section className="flex-1 w-full max-w-6xl mx-auto flex flex-col items-center justify-center p-2 sm:p-4">
+      {/* 2. Main Interactive Demo Area (Pushed directly to top, fitting screen correctly) */}
+      <section className="flex-1 w-full max-w-6xl mx-auto flex flex-col items-center justify-start pt-1 px-1 sm:px-2 pb-0 overflow-hidden min-h-0">
         {mode === "web" && (
-          <WebPlatform
+          <div className="w-full h-full max-h-full overflow-hidden flex flex-col">
+            <WebPlatform
               currentScreen={currentScreen}
               onNavigate={navigateTo}
               messages={messages}
@@ -390,6 +388,7 @@ export default function HomePage() {
               onPlaceOrder={handlePlaceOrder}
               bill={currentBill}
             />
+          </div>
         )}
 
         {mode === "mobile" && (

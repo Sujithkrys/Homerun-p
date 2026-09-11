@@ -8,17 +8,19 @@ interface ModeToggleProps {
   mode: DemoMode;
   onModeChange: (mode: DemoMode) => void;
   cartItemCount: number;
+  showSubtitle?: boolean;
 }
 
 export default function ModeToggle({
   mode,
   onModeChange,
   cartItemCount,
+  showSubtitle = false,
 }: ModeToggleProps) {
   return (
-    <div className="flex flex-col items-center justify-center pt-1 pb-1 px-2 select-none shrink-0">
+    <div className="flex flex-col items-center justify-center select-none shrink-0">
       {/* 3-Way Segmented Control */}
-      <div className="inline-flex p-0.5 bg-white border border-slate-200 shadow-2xs rounded-full gap-1">
+      <div className="inline-flex p-0.5 bg-slate-100/90 border border-slate-200/90 shadow-2xs rounded-full gap-0.5">
         {/* 1. Web Platform */}
         <button
           type="button"
@@ -80,27 +82,29 @@ export default function ModeToggle({
         </button>
       </div>
 
-      {/* Subtitle - Single compact line with tight margin */}
-      <p className="text-[12px] text-slate-500 mt-1 font-medium tracking-tight text-center leading-tight">
-        {mode === "web" && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-homerun-green"></span>
-            How the AI assistant looks on HomeRun&apos;s website — full platform with AI estimator
-          </span>
-        )}
-        {mode === "mobile" && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-homerun-green"></span>
-            How it looks in the HomeRun mobile app — full platform with AI estimator
-          </span>
-        )}
-        {mode === "whatsapp" && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#25d366]"></span>
-            How contractors order via WhatsApp — same AI, text interface
-          </span>
-        )}
-      </p>
+      {/* Optional Subtitle */}
+      {showSubtitle && (
+        <p className="text-[12px] text-slate-500 mt-1 font-medium tracking-tight text-center leading-tight">
+          {mode === "web" && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-homerun-green"></span>
+              How the AI assistant looks on HomeRun&apos;s website — full platform with AI estimator
+            </span>
+          )}
+          {mode === "mobile" && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-homerun-green"></span>
+              How it looks in the HomeRun mobile app — full platform with AI estimator
+            </span>
+          )}
+          {mode === "whatsapp" && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#25d366]"></span>
+              How contractors order via WhatsApp — same AI, text interface
+            </span>
+          )}
+        </p>
+      )}
     </div>
   );
 }

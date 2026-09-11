@@ -15,9 +15,9 @@ export default function PhoneFrame({
   const isLightText = statusBarTheme === "light";
 
   return (
-    <div className="flex items-center justify-center p-2 sm:p-4 select-none">
-      {/* Phone Mockup Frame: 375x812px */}
-      <div className="relative w-[375px] h-[812px] bg-slate-950 rounded-[46px] p-2.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] border-4 border-slate-800 ring-1 ring-slate-700/50 flex flex-col shrink-0">
+    <div className="flex items-start justify-center pt-0 pb-1 px-1 select-none h-full max-h-full">
+      {/* Phone Mockup Frame: Big size (375px), pushed to top and fitting screen height */}
+      <div className="relative w-[375px] sm:w-[380px] h-[calc(100vh-68px)] max-h-[812px] min-h-[640px] bg-slate-950 rounded-[44px] p-2 sm:p-2.5 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.35)] border-4 border-slate-800 ring-1 ring-slate-700/50 flex flex-col shrink-0 overflow-hidden">
         
         {/* Dynamic Island Pill - EXACTLY Centered at 50% */}
         <div className="absolute top-3.5 left-1/2 -translate-x-1/2 w-24 h-5 bg-black rounded-full z-50 flex items-center justify-center pointer-events-none shadow-sm">
