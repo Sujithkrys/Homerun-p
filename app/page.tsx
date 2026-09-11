@@ -12,8 +12,8 @@ import { ExternalLink } from "lucide-react";
 import { HomeRunLogo } from "@/components/HomeRunLogo";
 
 export default function HomePage() {
-  const [mode, setMode] = useState<DemoMode>("web");
-  const { currentScreen, navigateTo } = useNavigation("home");
+  const [mode, setMode] = useState<DemoMode>("mobile");
+  const { currentScreen, navigateTo } = useNavigation("ai-estimator");
 
   // Three separate chat state instances — one per mode (Option A)
   const webChat = useChat("web");
