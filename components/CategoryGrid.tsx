@@ -2,6 +2,7 @@
 
 import React from "react";
 import { CATEGORIES } from "@/lib/categories";
+import CategoryCard from "./CategoryCard";
 import { ArrowRight } from "lucide-react";
 
 interface CategoryGridProps {
@@ -16,46 +17,38 @@ export default function CategoryGrid({
   variant = "mobile",
 }: CategoryGridProps) {
   const isWeb = variant === "web";
+  // Show 8 categories in mobile (2 rows of 4), 12 in desktop
   const displayCategories = isWeb ? CATEGORIES.slice(0, 12) : CATEGORIES.slice(0, 8);
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-3 px-1">
+      <div className="flex items-center justify-between mb-2.5 px-0.5">
         <h3 className="font-bold text-slate-900 text-sm sm:text-base font-display">
           {isWeb ? "Browse by Category" : "Popular Categories"}
         </h3>
         <button
           type="button"
           onClick={onViewAll}
-          className="text-xs font-bold text-homerun-green hover:underline flex items-center gap-1"
+          className="text-xs font-bold text-homerun-green hover:underline flex items-center gap-1 cursor-pointer"
         >
           <span>View All</span>
           <ArrowRight className="w-3 h-3" />
         </button>
       </div>
 
+      {/* 4-column grid on mobile (matching real screenshot), 6-column on desktop */}
       <div
-        className={`grid gap-2 sm:gap-2.5 ${
+        className={`grid gap-2 sm:gap-3 ${
           isWeb ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-6" : "grid-cols-4"
         }`}
       >
         {displayCategories.map((cat) => (
-          <button
+          <CategoryCard
             key={cat.id}
-            type="button"
+            category={cat}
             onClick={() => onSelectCategory(cat.name)}
-            className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl bg-white border border-slate-200/80 hover:border-emerald-400 hover:shadow-xs hover:bg-emerald-50/20 active:scale-95 transition-all text-center group cursor-pointer"
-          >
-            <span className="text-2xl sm:text-3xl mb-1 select-none transform group-hover:scale-110 transition-transform">
-              {cat.icon}
-            </span>
-            <span className="text-[11px] sm:text-xs font-semibold text-slate-800 line-clamp-1 group-hover:text-homerun-green">
-              {cat.name}
-            </span>
-            <span className="text-[9.5px] sm:text-[10px] text-slate-400 font-medium mt-0.5">
-              {cat.productCount} items
-            </span>
-          </button>
+            variant={variant}
+          />
         ))}
       </div>
 
@@ -63,7 +56,7 @@ export default function CategoryGrid({
         <button
           type="button"
           onClick={onViewAll}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 px-3.5 py-1.5 rounded-full transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-[#eef7f3] hover:bg-[#e2f3ec] border border-[#d8eee3] px-4 py-1.5 rounded-full transition-colors cursor-pointer"
         >
           <span>View All 17 Categories</span>
           <ArrowRight className="w-3.5 h-3.5" />

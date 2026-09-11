@@ -21,41 +21,41 @@ export default function HeroCard({ onTryEstimator, variant = "mobile" }: HeroCar
   return (
     <div
       onClick={() => onTryEstimator()}
-      className={`w-full rounded-2xl bg-linear-to-br from-[#0a3a1b] via-[#105a2b] to-[#1a7a3a] text-white shadow-lg relative overflow-hidden cursor-pointer group transition-all hover:shadow-xl ${
-        isWeb ? "p-8 md:p-10" : "p-4 sm:p-5"
+      className={`w-full rounded-2xl bg-linear-to-br from-[#ffffff] via-[#f7fcf9] to-[#eef7f3] border border-[#cceade] shadow-xs relative overflow-hidden cursor-pointer group transition-all hover:shadow-md ${
+        isWeb ? "p-7 md:p-9" : "p-4 sm:p-5"
       }`}
     >
-      {/* Subtle background glow / decorative shape */}
-      <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none" />
-      <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full bg-homerun-yellow/10 blur-2xl pointer-events-none" />
+      {/* Subtle decorative mint circles */}
+      <div className="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-[#d8f3e5]/50 blur-xl pointer-events-none" />
+      <div className="absolute -bottom-10 -left-10 w-36 h-36 rounded-full bg-[#d5efe2]/40 blur-xl pointer-events-none" />
 
-      <div className={`relative z-10 flex flex-col ${isWeb ? "items-center text-center max-w-3xl mx-auto" : "items-start text-left"}`}>
-        {/* Badge */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs border border-white/20 text-xs font-semibold text-homerun-yellow mb-3">
-          <Sparkles className="w-3.5 h-3.5 text-homerun-yellow" />
+      <div className="relative z-10 flex flex-col items-start text-left">
+        {/* Eyebrow badge */}
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#e8f5e9] border border-[#c8e6c9] text-[11px] font-bold text-[#1a7a3a] mb-2.5">
+          <Sparkles className="w-3 h-3 text-[#1a7a3a]" />
           <span>Next-Gen Construction Assistant</span>
         </div>
 
-        {/* Title */}
+        {/* Heading */}
         <h2
-          className={`font-black tracking-tight text-white font-display leading-tight ${
-            isWeb ? "text-3xl md:text-4xl" : "text-xl sm:text-2xl"
+          className={`font-black tracking-tight text-[#1a1a1a] font-display leading-tight ${
+            isWeb ? "text-2xl md:text-3xl" : "text-lg sm:text-xl"
           }`}
         >
-          🤖✨ AI Material Estimator
+          🤖 AI Material Estimator
         </h2>
 
         {/* Subtitle */}
         <p
-          className={`text-emerald-100/90 font-medium leading-relaxed mt-2 ${
-            isWeb ? "text-base md:text-lg max-w-2xl" : "text-xs sm:text-sm"
+          className={`text-[#4b5563] font-normal leading-relaxed mt-1.5 ${
+            isWeb ? "text-sm md:text-base max-w-2xl" : "text-xs"
           }`}
         >
           Tell us your project in plain language — get an instant bill of materials with exact quantities, live Bangalore prices, and a downloadable PDF estimate.
         </p>
 
         {/* Example prompt pills */}
-        <div className={`flex flex-wrap gap-2 my-4 ${isWeb ? "justify-center" : "justify-start"}`}>
+        <div className="flex flex-wrap gap-1.5 my-3">
           {examplePrompts.slice(0, isWeb ? 4 : 2).map((prompt, idx) => (
             <button
               key={idx}
@@ -64,14 +64,14 @@ export default function HeroCard({ onTryEstimator, variant = "mobile" }: HeroCar
                 e.stopPropagation();
                 onTryEstimator(prompt);
               }}
-              className="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-medium text-emerald-100 transition-colors backdrop-blur-xs"
+              className="px-2.5 py-1 rounded-full bg-white hover:bg-[#eef7f3] border border-[#d8eee3] text-[11px] font-semibold text-[#1a7a3a] shadow-2xs transition-colors"
             >
               &ldquo;{prompt}&rdquo;
             </button>
           ))}
         </div>
 
-        {/* CTA Button */}
+        {/* Yellow CTA Button */}
         <div className="mt-1">
           <button
             type="button"
@@ -79,10 +79,10 @@ export default function HeroCard({ onTryEstimator, variant = "mobile" }: HeroCar
               e.stopPropagation();
               onTryEstimator();
             }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-homerun-yellow text-slate-950 font-black text-xs sm:text-sm shadow-md hover:bg-amber-400 active:scale-95 transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#f5c518] hover:bg-[#ebbb13] active:scale-95 text-[#111827] font-black text-xs sm:text-sm shadow-xs transition-all cursor-pointer"
           >
             <span>Try AI Estimator</span>
-            <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4 text-[#111827] group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
       </div>
