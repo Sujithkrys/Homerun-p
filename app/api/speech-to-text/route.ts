@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     // Forward to Sarvam STT API
     const sarvamFormData = new FormData();
     sarvamFormData.append("file", audioFile);
-    sarvamFormData.append("model", "saaras:v4");
+    sarvamFormData.append("model", "saaras:v1");
     // "unknown" tells Sarvam to auto-detect the language
     sarvamFormData.append("language_code", "unknown");
     // Enable timestamps for better accuracy
