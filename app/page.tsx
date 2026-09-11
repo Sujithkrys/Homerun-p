@@ -29,7 +29,7 @@ export default function HomePage() {
   const activeCartCount = modeCartCounts[mode];
 
   return (
-    <main className="h-screen max-h-screen w-screen overflow-hidden flex flex-col justify-between bg-slate-100/70 antialiased selection:bg-homerun-yellow/40">
+    <main className="h-[100dvh] max-h-[100dvh] w-full overflow-hidden flex flex-col justify-between bg-slate-100/70 antialiased selection:bg-homerun-yellow/40">
       {/* 1. Unified Single Top Bar (No empty space after name, sleek 44px) */}
       <header className="h-11 shrink-0 bg-white border-b border-slate-200/80 px-4 flex items-center justify-between select-none z-40">
         {/* Brand Logo & Name */}
