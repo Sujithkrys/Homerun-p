@@ -167,6 +167,8 @@ export default function WebPlatform({
             onNavigateToEstimator={() => onNavigate("ai-estimator")}
             demoOrder={demoOrder}
             variant="web"
+            cartCount={cartCount}
+            onOpenCart={() => setIsSidebarCartOpen(true)}
           />
         )}
 
@@ -175,6 +177,8 @@ export default function WebPlatform({
             onBack={() => onNavigate("home")}
             onNavigateToOrders={() => onNavigate("orders")}
             variant="web"
+            cartCount={cartCount}
+            onOpenCart={() => setIsSidebarCartOpen(true)}
           />
         )}
 

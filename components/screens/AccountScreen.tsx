@@ -183,29 +183,6 @@ export default function AccountScreen({
             </button>
           ))}
         </div>
-
-        {/* HomeRun Cash Card (Opens Wallet Overlay) */}
-        <div
-          onClick={() => setIsWalletOpen(true)}
-          className="rounded-xl bg-linear-to-r from-[#1a5c2d] to-[#0d3d1c] p-3.5 text-white flex items-center justify-between cursor-pointer shadow-xs hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center text-[#f5c518]">
-              <Wallet className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-bold text-xs block">HomeRun Cash</span>
-              <span className="text-[10px] text-emerald-200">
-                Earn cashback on every site order
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <span className="font-mono font-black text-sm text-[#f5c518]">₹0</span>
-            <ChevronRight className="w-4 h-4 text-emerald-300" />
-          </div>
-        </div>
       </div>
     </div>
   );

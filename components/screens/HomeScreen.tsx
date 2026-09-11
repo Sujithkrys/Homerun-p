@@ -111,7 +111,15 @@ export default function HomeScreen({
                   ? `Search for ${ROTATING_SEARCH_TERMS[termIndex]}...`
                   : ""
               }
-              className="w-full text-xs font-semibold text-[#1a1a1a] placeholder:text-[#888888] placeholder:font-normal focus:outline-hidden bg-transparent"
+              style={{
+                border: "none",
+                outline: "none",
+                boxShadow: "none",
+                background: "transparent",
+                appearance: "none",
+                WebkitAppearance: "none",
+              }}
+              className="w-full border-none outline-none ring-0 focus:ring-0 focus:outline-none shadow-none text-xs font-semibold text-[#1a1a1a] placeholder:text-[#888888] placeholder:font-normal bg-transparent"
             />
             {searchQuery.length > 0 ? (
               <button

@@ -120,6 +120,8 @@ export default function MobileApp({
             onNavigateToEstimator={() => onNavigate("ai-estimator")}
             demoOrder={demoOrder}
             variant="mobile"
+            cartCount={cartCount}
+            onOpenCart={() => setIsCartOpen(true)}
           />
         )}
 
@@ -128,6 +130,8 @@ export default function MobileApp({
             onBack={() => onNavigate("home")}
             onNavigateToOrders={() => onNavigate("orders")}
             variant="mobile"
+            cartCount={cartCount}
+            onOpenCart={() => setIsCartOpen(true)}
           />
         )}
       </div>
