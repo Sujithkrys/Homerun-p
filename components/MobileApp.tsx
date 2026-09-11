@@ -82,7 +82,7 @@ export default function MobileApp({
   return (
     <div className="w-full h-full flex flex-col bg-white overflow-hidden relative">
       {/* Screen Content */}
-      <div className="flex-1 w-full h-full min-h-0 overflow-hidden flex flex-col">
+      <div className="flex-1 w-full min-h-0 overflow-hidden flex flex-col">
         {currentScreen === "home" && (
           <HomeScreen
             onNavigateToEstimator={handleNavigateToEstimatorWithPrompt}
@@ -123,6 +123,7 @@ export default function MobileApp({
         {currentScreen === "orders" && (
           <OrdersScreen
             onBack={() => onNavigate("home")}
+            onNavigateToHome={() => onNavigate("home")}
             onNavigateToEstimator={() => onNavigate("ai-estimator")}
             demoOrder={demoOrder}
             variant="mobile"

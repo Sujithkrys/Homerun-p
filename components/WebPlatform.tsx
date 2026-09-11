@@ -169,6 +169,7 @@ export default function WebPlatform({
         {currentScreen === "orders" && (
           <OrdersScreen
             onBack={() => onNavigate("home")}
+            onNavigateToHome={() => onNavigate("home")}
             onNavigateToEstimator={() => onNavigate("ai-estimator")}
             demoOrder={demoOrder}
             variant="web"

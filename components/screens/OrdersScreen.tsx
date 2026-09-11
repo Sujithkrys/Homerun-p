@@ -51,7 +51,7 @@ export default function OrdersScreen({
       {/* Main Content */}
       <div
         className={`flex-1 w-full overflow-y-auto overflow-x-hidden no-scrollbar ${
-          isWeb ? "p-6 md:p-8 max-w-4xl mx-auto space-y-6" : "p-4 space-y-4"
+          isWeb ? "p-6 md:p-8 max-w-4xl mx-auto space-y-6" : "p-3 space-y-3 pb-6"
         }`}
       >
         {demoOrder ? (
@@ -104,7 +104,7 @@ export default function OrdersScreen({
           </div>
         ) : (
           /* Real HomeRun Empty State matching Screenshot 5 exactly! */
-          <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+          <div className="flex flex-col items-center justify-center py-14 sm:py-16 text-center px-4">
             {/* Receipt Icon inside Circular background */}
             <div className="w-20 h-20 rounded-full bg-[#f3f4f6] flex items-center justify-center mb-5">
               <svg viewBox="0 0 24 24" className="w-9 h-9 text-[#9ca3af]" fill="currentColor">

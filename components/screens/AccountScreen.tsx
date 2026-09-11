@@ -132,7 +132,7 @@ export default function AccountScreen({
       {/* Main Content */}
       <div
         className={`flex-1 w-full overflow-y-auto overflow-x-hidden no-scrollbar ${
-          isWeb ? "p-6 md:p-8 max-w-5xl mx-auto space-y-6" : "p-3 space-y-3 pb-8"
+          isWeb ? "p-6 md:p-8 max-w-5xl mx-auto space-y-6" : "p-3 space-y-3 pb-6"
         }`}
       >
         {/* Account Info: Centered "My Account" with pen icon from Screenshot 4 */}

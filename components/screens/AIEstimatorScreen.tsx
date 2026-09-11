@@ -86,7 +86,7 @@ export default function AIEstimatorScreen({
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#fbfbfb] relative overflow-hidden">
+    <div className="w-full h-full flex-1 flex flex-col min-h-0 bg-[#fbfbfb] relative overflow-hidden">
       {/* Real HomeRun Clean White Header on Mobile */}
       {!isWeb && (
         <div className="bg-white px-3.5 pt-9 pb-2.5 border-b border-[#eeeeee] flex items-center justify-between shrink-0 shadow-2xs">

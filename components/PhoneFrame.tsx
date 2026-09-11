@@ -15,9 +15,9 @@ export default function PhoneFrame({
   const isLightText = statusBarTheme === "light";
 
   return (
-    <div className="flex items-start justify-center pt-0 pb-1 px-1 select-none h-full max-h-full">
-      {/* Phone Mockup Frame: Responsive on mobile, Big size (380px) on desktop, fitting screen height */}
-      <div className="relative w-full max-w-[375px] sm:max-w-[380px] h-[calc(100vh-125px)] sm:h-[calc(100vh-68px)] max-h-[812px] min-h-0 bg-slate-950 rounded-[38px] sm:rounded-[44px] p-1.5 sm:p-2.5 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.35)] border-3 sm:border-4 border-slate-800 ring-1 ring-slate-700/50 flex flex-col shrink-0 overflow-hidden">
+    <div className="w-full flex items-start justify-center pt-0 pb-1 px-1 select-none h-full max-h-full">
+      {/* Phone Mockup Frame: Fixed 380px on desktop/tablet, 375px or screen width on mobile, NEVER shrinks */}
+      <div className="relative w-[375px] max-w-full sm:w-[380px] h-[calc(100vh-125px)] sm:h-[calc(100vh-68px)] max-h-[812px] min-h-0 bg-slate-950 rounded-[38px] sm:rounded-[44px] p-1.5 sm:p-2.5 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.35)] border-3 sm:border-4 border-slate-800 ring-1 ring-slate-700/50 flex flex-col shrink-0 overflow-hidden">
         
         {/* Dynamic Island Pill - EXACTLY Centered at 50% */}
         <div className="absolute top-3.5 left-1/2 -translate-x-1/2 w-24 h-5 bg-black rounded-full z-50 flex items-center justify-center pointer-events-none shadow-sm">
