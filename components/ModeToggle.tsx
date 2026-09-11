@@ -26,7 +26,7 @@ export default function ModeToggle({
         <button
           type="button"
           onClick={() => onModeChange("web")}
-          className={`relative flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
+          className={`relative flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11.5px] sm:text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 ${
             mode === "web"
               ? "bg-homerun-green text-white shadow-xs"
               : "text-slate-600 hover:text-homerun-green hover:bg-white/80"
@@ -46,7 +46,7 @@ export default function ModeToggle({
         <button
           type="button"
           onClick={() => onModeChange("mobile")}
-          className={`relative flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
+          className={`relative flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11.5px] sm:text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 ${
             mode === "mobile"
               ? "bg-homerun-green text-white shadow-xs"
               : "text-slate-600 hover:text-homerun-green hover:bg-white/80"
@@ -66,7 +66,7 @@ export default function ModeToggle({
         <button
           type="button"
           onClick={() => onModeChange("whatsapp")}
-          className={`relative flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
+          className={`relative flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11.5px] sm:text-xs font-bold transition-all duration-200 cursor-pointer shrink-0 ${
             mode === "whatsapp"
               ? "bg-homerun-green text-white shadow-xs"
               : "text-slate-600 hover:text-homerun-green hover:bg-white/80"

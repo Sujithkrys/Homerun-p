@@ -25,20 +25,25 @@ body {
   background-position: 0 0, 15px 15px;
 }
 
-/* Subtle scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Hide scrollbars globally across the app for a native, sleek appearance */
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 9999px;
+
+.no-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* WhatsApp Bubble Tails */

@@ -34,7 +34,7 @@ export default function CategoriesScreen({
 
       {/* Main Body */}
       <div
-        className={`flex-1 overflow-y-auto ${
+        className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar ${
           isWeb ? "p-6 md:p-8 max-w-6xl mx-auto space-y-6 w-full" : "p-3 space-y-4"
         }`}
       >

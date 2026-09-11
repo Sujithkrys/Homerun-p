@@ -338,8 +338,8 @@ export default function HomePage() {
           </a>
         </div>
 
-        {/* 3-Mode Switcher right in header bar */}
-        <div className="flex items-center justify-center">
+        {/* 3-Mode Switcher in header bar (Desktop/Tablet one-line layout) */}
+        <div className="hidden sm:flex items-center justify-center">
           <ModeToggle
             mode={mode}
             onModeChange={setMode}
@@ -431,6 +431,15 @@ export default function HomePage() {
           </PhoneFrame>
         )}
       </section>
+
+      {/* 3. Mobile-Only Bottom Mode Switcher Dock (Easy thumb access, keeps mobile screen clean) */}
+      <div className="sm:hidden w-full bg-white/95 backdrop-blur-md border-t border-slate-200/90 py-1.5 px-3 flex items-center justify-center shrink-0 z-40 shadow-xs">
+        <ModeToggle
+          mode={mode}
+          onModeChange={setMode}
+          cartItemCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
+        />
+      </div>
 
       {/* 4. Minimal Footer (Single line, 28px tall max, inside page layout) */}
       <footer className="w-full h-7 shrink-0 bg-white border-t border-slate-200 px-4 flex items-center justify-center text-[11px] text-slate-500 select-none">

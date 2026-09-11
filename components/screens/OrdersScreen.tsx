@@ -50,7 +50,7 @@ export default function OrdersScreen({
 
       {/* Main Content */}
       <div
-        className={`flex-1 overflow-y-auto ${
+        className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar ${
           isWeb ? "p-6 md:p-8 max-w-4xl mx-auto space-y-6 w-full" : "p-4 space-y-4"
         }`}
       >
