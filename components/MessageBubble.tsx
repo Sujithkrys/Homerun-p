@@ -8,6 +8,7 @@ import SuggestionChips from "./SuggestionChips";
 import DownloadEstimateButton from "./DownloadEstimateButton";
 import WhatsAppText from "@/lib/formatWhatsApp";
 import ProductRecommendation from "./ProductRecommendation";
+import AudioPlayButton from "./AudioPlayButton";
 
 interface MessageBubbleProps {
   message: Message;
@@ -17,6 +18,9 @@ interface MessageBubbleProps {
   onAddSuggestion?: (suggestion: Suggestion) => void;
   onAddToCart?: (product: CartItem) => void;
   onAddAllToCart?: (products: CartItem[]) => void;
+  onPlayAudio?: (text: string) => void;
+  onStopAudio?: () => void;
+  isPlayingAudio?: boolean;
 }
 
 // Simple markdown formatter helper for bold, bullets, and line breaks
@@ -87,6 +91,9 @@ export default function MessageBubble({
   onAddSuggestion,
   onAddToCart,
   onAddAllToCart,
+  onPlayAudio,
+  onStopAudio,
+  isPlayingAudio = false,
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const hasCartItems = message.cart_items && message.cart_items.length > 0;
@@ -366,9 +373,18 @@ export default function MessageBubble({
           />
         )}
 
-        {/* Timestamp */}
-        <div className="flex items-center justify-end mt-1.5 text-[10.5px] text-slate-400">
-          <span>{time}</span>
+        {/* Timestamp and Audio Playback */}
+        <div className="flex items-center justify-between mt-1.5 text-[10.5px] text-slate-400">
+          {!isUser && onPlayAudio ? (
+            <AudioPlayButton
+              isPlaying={isPlayingAudio}
+              onPlay={() => onPlayAudio(message.content)}
+              onStop={onStopAudio || (() => {})}
+            />
+          ) : (
+            <div />
+          )}
+          <span className="ml-auto">{time}</span>
         </div>
       </div>
     </div>

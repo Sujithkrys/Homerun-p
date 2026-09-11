@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { Message, CartItem, Suggestion } from "@/lib/types";
 import MessageBubble from "../MessageBubble";
 import QuickActions from "../QuickActions";
+import VoiceButton from "../VoiceButton";
+import { useVoice } from "@/lib/useVoice";
 import {
   ArrowLeft,
   ShoppingCart,
@@ -46,8 +48,18 @@ export default function AIEstimatorScreen({
 }: AIEstimatorScreenProps) {
   const [inputText, setInputText] = useState(initialInput);
   const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isWeb = variant === "web";
+
+  const voice = useVoice();
+
+  const handleVoiceResult = async () => {
+    const transcript = await voice.stopRecording();
+    if (transcript) {
+      onSendMessage(transcript);
+    }
+  };
 
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -193,6 +205,15 @@ export default function AIEstimatorScreen({
               onAddSuggestion={onAddSuggestion}
               onAddToCart={onAddToCart}
               onAddAllToCart={onAddAllToCart}
+              onPlayAudio={(text) => {
+                setPlayingMessageId(msg.id);
+                voice.playBotAudio(text);
+              }}
+              onStopAudio={() => {
+                setPlayingMessageId(null);
+                voice.stopAudio();
+              }}
+              isPlayingAudio={voice.isPlayingAudio && playingMessageId === msg.id}
             />
           ))
         )}
@@ -217,23 +238,43 @@ export default function AIEstimatorScreen({
       {/* Chat Input Bar */}
       <div className="p-2.5 sm:p-3 bg-white border-t border-[#eeeeee] shrink-0">
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
+          {/* Voice Mic Button */}
+          <VoiceButton
+            isRecording={voice.isRecording}
+            isProcessingSTT={voice.isProcessingSTT}
+            onStartRecording={voice.startRecording}
+            onStopRecording={handleVoiceResult}
+            disabled={isLoading}
+          />
+
           <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Type e.g. 'Tile my 2 bathrooms' or '10 bags UltraTech'..."
-            disabled={isLoading}
+            placeholder={
+              voice.isRecording
+                ? "Listening... Speak in Hindi, Kannada, Telugu, English..."
+                : "Type or tap mic to speak..."
+            }
+            disabled={isLoading || voice.isRecording}
             className="flex-1 text-xs sm:text-sm px-3.5 py-2.5 rounded-xl bg-[#f5f5f5] border border-[#e5e5e5] focus:bg-white focus:outline-hidden focus:border-[#1a7a3a] transition-all font-sans"
           />
           <button
             type="submit"
-            disabled={!inputText.trim() || isLoading}
+            disabled={!inputText.trim() || isLoading || voice.isRecording}
             className="p-2.5 sm:p-3 rounded-xl bg-[#1a7a3a] text-white hover:bg-[#145f2d] disabled:opacity-40 active:scale-95 transition-all shadow-xs cursor-pointer disabled:cursor-default"
             aria-label="Send message"
           >
             <Send className="w-4 h-4" />
           </button>
         </form>
+
+        {/* Voice Error Notification */}
+        {voice.error && (
+          <div className="px-2 pt-1.5 text-xs text-red-500 font-medium">
+            {voice.error}
+          </div>
+        )}
       </div>
     </div>
   );
