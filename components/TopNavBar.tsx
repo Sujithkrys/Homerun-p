@@ -29,7 +29,7 @@ export default function TopNavBar({
   const navItems: { screen: AppScreen; label: string; isSpecial?: boolean }[] = [
     { screen: "home", label: "Home" },
     { screen: "categories", label: "Categories" },
-    { screen: "ai-estimator", label: "AI Estimator", isSpecial: true },
+    { screen: "ai-estimator", label: "🎙️ Voice AI Estimator", isSpecial: true },
     { screen: "orders", label: "Orders" },
     { screen: "account", label: "Account" },
   ];

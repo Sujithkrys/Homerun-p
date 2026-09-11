@@ -237,6 +237,26 @@ export default function AIEstimatorScreen({
 
       {/* Chat Input Bar */}
       <div className="p-2.5 sm:p-3 bg-white border-t border-[#eeeeee] shrink-0">
+        {/* Voice Agent Language Bar */}
+        <div className="flex items-center justify-between px-1 pb-1.5 text-[10.5px]">
+          <span className="flex items-center gap-1.5 font-bold text-[#1a7a3a]">
+            <span className={`w-2 h-2 rounded-full ${voice.isRecording ? "bg-red-500 animate-ping" : "bg-[#1a7a3a]"}`} />
+            {voice.isRecording ? (
+              <span className="text-red-600 font-extrabold animate-pulse">
+                Listening... Speak now & tap mic when done
+              </span>
+            ) : voice.isProcessingSTT ? (
+              <span className="text-amber-700 font-bold">
+                Transcribing speech with Sarvam AI...
+              </span>
+            ) : (
+              <span>
+                🎙️ Voice Agent: Tap mic to speak in Kannada, Hindi, Telugu, English
+              </span>
+            )}
+          </span>
+        </div>
+
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           {/* Voice Mic Button */}
           <VoiceButton

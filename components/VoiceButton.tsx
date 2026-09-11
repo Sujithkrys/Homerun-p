@@ -30,19 +30,19 @@ export function VoiceButton({
       type="button"
       onClick={handleClick}
       disabled={disabled || isProcessingSTT}
-      className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 shrink-0 ${
+      className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 shrink-0 ${
         isRecording
-          ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30"
+          ? "bg-red-500 text-white animate-pulse shadow-md shadow-red-500/40 ring-2 ring-red-300 scale-105"
           : isProcessingSTT
-          ? "bg-gray-300 text-gray-500 cursor-wait"
-          : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800"
+          ? "bg-amber-100 text-amber-700 cursor-wait border border-amber-300"
+          : "bg-emerald-50 text-[#1a7a3a] border border-emerald-300 hover:bg-[#1a7a3a] hover:text-white hover:border-[#1a7a3a] shadow-xs active:scale-95"
       } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
       title={
         isRecording
           ? "Tap to stop recording"
           : isProcessingSTT
-          ? "Processing speech..."
-          : "Tap to speak"
+          ? "Transcribing speech..."
+          : "Voice Assistant — Speak in Kannada, Hindi, Telugu, English"
       }
       aria-label={isRecording ? "Stop recording" : "Start voice recording"}
     >
