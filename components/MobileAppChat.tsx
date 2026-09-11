@@ -95,7 +95,7 @@ export default function MobileAppChat({
       <div className="bg-homerun-green text-white pt-11 pb-3 px-4 flex items-center justify-between shadow-xs shrink-0 select-none">
         <div className="flex items-center gap-2.5">
           {/* Official HomeRun Logo */}
-          <HomeRunLogo className="w-8 h-8 rounded-lg shadow-xs" />
+          <HomeRunLogo size={32} className="w-8 h-8 rounded-lg shadow-xs" />
           <div className="leading-tight">
             <h2 className="text-sm font-bold tracking-tight text-white font-display flex items-center gap-1.5">
               <span>HomeRun Assistant</span>

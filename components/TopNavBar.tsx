@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   Building2,
 } from "lucide-react";
-import { HomeRunLogo, HomeRunThunder } from "./HomeRunLogo";
+import { HomeRunThunder } from "./HomeRunLogo";
 
 interface TopNavBarProps {
   currentScreen: AppScreen;
@@ -39,16 +39,15 @@ export default function TopNavBar({
       {/* Row 1: Brand & Trust Badges */}
       <div className="border-b border-emerald-800/80">
         <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-4">
-          {/* Logo */}
+          {/* Brand Info */}
           <div
             onClick={() => onNavigate("home")}
-            className="flex items-center gap-2.5 cursor-pointer group shrink-0"
+            className="flex items-center gap-2 cursor-pointer group shrink-0"
           >
-            <HomeRunLogo className="w-8 h-8 rounded-lg shadow-sm group-hover:scale-105 transition-transform" />
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-base tracking-tight leading-none text-white font-display">
-                  HomeRun
+                  Home<span className="text-[#f5c518]">Run</span>
                 </span>
                 <span className="text-[10px] uppercase font-bold tracking-wider bg-emerald-950/40 text-[#f5c518] px-1.5 py-0.2 rounded">
                   Quick Commerce

@@ -327,7 +327,7 @@ export default function HomePage() {
       <header className="h-11 shrink-0 bg-white border-b border-slate-200/80 px-4 flex items-center justify-between select-none z-40">
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-2 shrink-0">
-          <HomeRunLogo className="w-6.5 h-6.5 rounded-md shadow-2xs" />
+          <HomeRunLogo size={22} className="w-[22px] h-[22px] rounded-sm shadow-2xs" />
           <a
             href="https://home-run.co"
             target="_blank"

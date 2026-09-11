@@ -56,7 +56,7 @@ export default function ChatWindow({
       <div className="bg-homerun-green text-white px-5 py-3.5 flex items-center justify-between shadow-sm shrink-0">
         <div className="flex items-center gap-3">
           {/* Official HomeRun Logo Square */}
-          <HomeRunLogo className="w-10 h-10 rounded-xl shadow-xs shrink-0 select-none" />
+          <HomeRunLogo size={36} className="w-9 h-9 rounded-xl shadow-xs shrink-0 select-none" />
           <div>
             <div className="flex items-center gap-2">
               <h2 className="font-bold text-base tracking-tight leading-none">HomeRun</h2>

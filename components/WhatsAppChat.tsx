@@ -15,6 +15,7 @@ import {
   Send,
   RefreshCw,
 } from "lucide-react";
+import { HomeRunLogo } from "./HomeRunLogo";
 
 interface WhatsAppChatProps {
   messages: Message[];
@@ -64,12 +65,12 @@ export default function WhatsAppChat({
             <ArrowLeft className="w-5 h-5" />
           </button>
 
-          {/* Yellow HR Avatar */}
+          {/* HomeRun WhatsApp Official Profile Picture */}
           <div className="relative shrink-0">
-            <div className="w-8 h-8 rounded-full bg-homerun-yellow flex items-center justify-center text-homerun-green font-black text-xs shadow-xs border border-white/20 select-none">
-              HR
+            <div className="w-8 h-8 rounded-full overflow-hidden bg-[#EFC41A] flex items-center justify-center shadow-xs border border-white/20 select-none">
+              <HomeRunLogo size={32} className="w-8 h-8 rounded-none" />
             </div>
-            <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 border-2 border-[#075e54]"></span>
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#25d366] border-2 border-[#075e54]"></span>
           </div>
 
           {/* Title and online status on single row */}
