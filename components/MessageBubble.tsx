@@ -346,6 +346,40 @@ export default function MessageBubble({
           />
         )}
 
+        {/* Added to Cart Items List (Web & Mobile) */}
+        {!isUser && message.cart_items && message.cart_items.length > 0 && (!message.recommended_products || message.recommended_products.length === 0) && (
+          <div className="mt-2.5 p-2.5 sm:p-3 bg-emerald-50/90 border border-emerald-200 rounded-xl space-y-2">
+            <div className="flex items-center justify-between border-b border-emerald-200/60 pb-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900">
+                <span>🛒</span>
+                <span>Items Added to Order</span>
+              </div>
+              <span className="text-[11px] font-extrabold text-[#1a7a3a]">
+                ₹{message.cart_items.reduce((sum, it) => sum + it.total, 0).toLocaleString("en-IN")}
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {message.cart_items.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between text-xs text-slate-800 bg-white px-2.5 py-1.5 rounded-lg border border-emerald-100 shadow-2xs"
+                >
+                  <div className="flex items-center gap-1.5 truncate mr-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1a7a3a] shrink-0" />
+                    <span className="font-semibold truncate">{item.name}</span>
+                    <span className="text-[11px] text-slate-500 shrink-0">
+                      × {item.quantity} {item.unit}
+                    </span>
+                  </div>
+                  <span className="font-bold text-[#1a1a1a] shrink-0">
+                    ₹{item.total.toLocaleString("en-IN")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 1. Multi-Room Project Estimate Card */}
         {!isUser && message.project_estimate && (
           <ProjectEstimateCard

@@ -4,8 +4,6 @@ import React from "react";
 import { AppScreen } from "@/lib/types";
 import { HomeRunThunder } from "./HomeRunLogo";
 
-import { Mic } from "lucide-react";
-
 interface BottomNavBarProps {
   currentScreen: AppScreen;
   onNavigate: (screen: AppScreen) => void;
@@ -67,27 +65,24 @@ export default function BottomNavBar({ currentScreen, onNavigate }: BottomNavBar
         </span>
       </button>
 
-      {/* 3. Floating AI Estimator Center Button (Green Circle Hero CTA with Voice Badge) */}
+      {/* 3. Floating AI Estimator Center Button (Green Circle Hero CTA) */}
       <div className="flex flex-col items-center justify-center flex-1 relative -top-3.5">
         <button
           type="button"
           onClick={() => onNavigate("ai-estimator")}
-          className={`relative w-12 h-12 rounded-full bg-[#1a7a3a] text-white flex items-center justify-center shadow-lg border-2 border-white hover:bg-emerald-800 active:scale-95 transition-all cursor-pointer ${
+          className={`w-12 h-12 rounded-full bg-[#1a7a3a] text-white flex items-center justify-center shadow-lg border-2 border-white hover:bg-emerald-800 active:scale-95 transition-all cursor-pointer ${
             currentScreen === "ai-estimator" ? "ring-2 ring-[#f5c518] ring-offset-2 scale-105" : ""
           }`}
-          aria-label="Voice & AI Estimator"
+          aria-label="AI Estimator"
         >
           <HomeRunThunder className="w-6 h-6 text-[#f5c518] animate-pulse" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#f5c518] text-[#1a1a1a] flex items-center justify-center shadow-xs border border-white">
-            <Mic className="w-2.5 h-2.5" />
-          </span>
         </button>
         <span
           className={`text-[10px] mt-0.5 font-extrabold tracking-tight ${
             currentScreen === "ai-estimator" ? "text-[#1a7a3a]" : "text-[#555555]"
           }`}
         >
-          Voice AI
+          Estimate
         </span>
       </div>
 

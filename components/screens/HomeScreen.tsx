@@ -11,7 +11,6 @@ import {
   ShieldCheck,
   Search,
   X,
-  Mic,
 } from "lucide-react";
 
 interface HomeScreenProps {
@@ -131,23 +130,12 @@ export default function HomeScreen({
                 <X className="w-3.5 h-3.5" />
               </button>
             ) : (
-              <div className="flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => onNavigateToEstimator()}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[#1a7a3a] border border-emerald-300 text-[10.5px] font-extrabold transition-all cursor-pointer shadow-2xs"
-                  title="Speak with Voice AI Agent"
-                >
-                  <Mic className="w-3.5 h-3.5 text-[#1a7a3a]" />
-                  <span className="text-[10px]">Voice</span>
-                </button>
-                <button
-                  type="submit"
-                  className="text-[11px] font-bold text-[#1a7a3a] px-2 py-0.5 rounded-md hover:bg-[#eef7f3] transition-colors cursor-pointer shrink-0"
-                >
-                  Search
-                </button>
-              </div>
+              <button
+                type="submit"
+                className="text-[11px] font-bold text-[#1a7a3a] px-2 py-0.5 rounded-md hover:bg-[#eef7f3] transition-colors cursor-pointer shrink-0"
+              >
+                Search
+              </button>
             )}
           </form>
 

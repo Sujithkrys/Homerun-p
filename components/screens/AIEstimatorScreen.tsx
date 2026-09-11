@@ -53,10 +53,12 @@ export default function AIEstimatorScreen({
   const isWeb = variant === "web";
 
   const voice = useVoice();
+  const [autoSpeakVoiceResponse, setAutoSpeakVoiceResponse] = useState(false);
 
   const handleVoiceResult = async () => {
     const transcript = await voice.stopRecording();
     if (transcript) {
+      setAutoSpeakVoiceResponse(true);
       onSendMessage(transcript);
     }
   };
@@ -72,6 +74,18 @@ export default function AIEstimatorScreen({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  // When voice agent was used, automatically speak the bot's response out loud
+  useEffect(() => {
+    if (autoSpeakVoiceResponse && messages.length > 0 && !isLoading) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.role === "assistant") {
+        setAutoSpeakVoiceResponse(false);
+        setPlayingMessageId(lastMsg.id);
+        voice.playBotAudio(lastMsg.content);
+      }
+    }
+  }, [messages, isLoading, autoSpeakVoiceResponse]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
