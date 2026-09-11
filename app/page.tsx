@@ -114,17 +114,19 @@ export default function HomePage() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
+      // Even if status is not 200, parse response body to display server guidance
+      let data: any = {};
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        console.error("Failed to parse JSON response:", jsonErr);
       }
-
-      const data: ChatResponse = await response.json();
 
       // Add to Cart State: If the same product_id already exists, update quantity
       if (data.cart_items && data.cart_items.length > 0) {
         setCart((prevCart) => {
           const updated = [...prevCart];
-          data.cart_items.forEach((newItem) => {
+          data.cart_items.forEach((newItem: CartItem) => {
             const existingIndex = updated.findIndex(
               (item) => item.product_id === newItem.product_id
             );
@@ -148,7 +150,7 @@ export default function HomePage() {
       const assistantMessage: Message = {
         id: `asst-${Date.now()}`,
         role: "assistant",
-        content: data.message || "I have received your request.",
+        content: data.message || "Sorry, I couldn't process that. Please try again.",
         cart_items: data.cart_items || [],
         estimation_summary: data.estimation_summary || null,
         project_estimate: data.project_estimate || null,
@@ -161,11 +163,12 @@ export default function HomePage() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
-      console.error("Chat error:", err);
+      console.error("Chat fetch error:", err);
       const errorMessage: Message = {
         id: `err-${Date.now()}`,
         role: "assistant",
-        content: "Oops, our AI is taking a break. Try again in a moment.",
+        content:
+          "⚠️ Could not connect to the server. Check that the dev server is running (npm run dev) or that the Vercel deployment is active.",
         timestamp: currentTime,
       };
       setMessages((prev) => [...prev, errorMessage]);
