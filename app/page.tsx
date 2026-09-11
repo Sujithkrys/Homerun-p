@@ -16,6 +16,7 @@ import {
 } from "@/lib/types";
 import { useNavigation } from "@/lib/useNavigation";
 import { ExternalLink, Sparkles, Building2, Clock, ShieldCheck } from "lucide-react";
+import { HomeRunLogo } from "@/components/HomeRunLogo";
 
 function getInitialGreeting(): Message {
   return {
@@ -326,9 +327,7 @@ export default function HomePage() {
       <header className="h-11 shrink-0 bg-white border-b border-slate-200/80 px-4 flex items-center justify-between select-none z-40">
         {/* Brand Logo & Name */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="w-7 h-7 rounded-lg bg-homerun-yellow flex items-center justify-center text-homerun-green font-black text-xs shadow-2xs">
-            HR
-          </div>
+          <HomeRunLogo className="w-6.5 h-6.5 rounded-md shadow-2xs" />
           <a
             href="https://home-run.co"
             target="_blank"

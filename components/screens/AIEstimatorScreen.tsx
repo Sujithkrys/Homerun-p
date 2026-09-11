@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { HomeRunThunder } from "../HomeRunLogo";
 
 interface AIEstimatorScreenProps {
   messages: Message[];
@@ -169,7 +170,7 @@ export default function AIEstimatorScreen({
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8">
             <div className="w-12 h-12 rounded-2xl bg-[#eef7f3] flex items-center justify-center text-[#1a7a3a] mb-3">
-              <Sparkles className="w-6 h-6" />
+              <HomeRunThunder className="w-6 h-6 text-[#1a7a3a]" />
             </div>
             <h4 className="font-extrabold text-sm sm:text-base text-[#1a1a1a]">
               HomeRun AI Estimator

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ChevronDown, ShoppingCart } from "lucide-react";
+import { HomeRunLogo } from "./HomeRunLogo";
 
 interface HomeRunHeaderProps {
   cartCount: number;
@@ -18,10 +19,13 @@ export default function HomeRunHeader({
     <div className="w-full bg-white px-4 pt-9 pb-2 border-b border-[#f0f0f0] flex items-start justify-between shrink-0 select-none">
       {/* Left Column: Logo + 60 Mins + Set location */}
       <div>
-        {/* Brand text */}
-        <div className="flex items-center text-xs tracking-tight font-extrabold font-display">
-          <span className="text-[#1a1a1a]">Home</span>
-          <span className="text-[#eab308]">Run</span>
+        {/* Brand text with official Logo */}
+        <div className="flex items-center gap-1.5 text-xs tracking-tight font-extrabold font-display">
+          <HomeRunLogo className="w-4.5 h-4.5 rounded-sm" />
+          <div>
+            <span className="text-[#1a1a1a]">Home</span>
+            <span className="text-[#eab308]">Run</span>
+          </div>
         </div>
 
         {/* 60 Mins with dropdown arrow */}

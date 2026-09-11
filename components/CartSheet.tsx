@@ -15,6 +15,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import confetti from "canvas-confetti";
+import { HomeRunThunder } from "./HomeRunLogo";
 
 interface CartSheetProps {
   isOpen: boolean;
@@ -177,7 +178,7 @@ export default function CartSheet({
                   }}
                   className="mt-6 px-5 py-2.5 rounded-xl bg-[#1a7a3a] text-white text-xs font-extrabold shadow-sm hover:bg-[#145f2d] transition-all cursor-pointer flex items-center gap-1.5"
                 >
-                  <Sparkles className="w-4 h-4 text-yellow-300" />
+                  <HomeRunThunder className="w-4 h-4 text-yellow-300" />
                   <span>Go to AI Estimator</span>
                 </button>
               )}

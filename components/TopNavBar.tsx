@@ -3,7 +3,6 @@
 import React from "react";
 import { AppScreen } from "@/lib/types";
 import {
-  Sparkles,
   ShoppingCart,
   MapPin,
   Zap,
@@ -12,6 +11,7 @@ import {
   ShieldCheck,
   Building2,
 } from "lucide-react";
+import { HomeRunLogo, HomeRunThunder } from "./HomeRunLogo";
 
 interface TopNavBarProps {
   currentScreen: AppScreen;
@@ -44,9 +44,7 @@ export default function TopNavBar({
             onClick={() => onNavigate("home")}
             className="flex items-center gap-2.5 cursor-pointer group shrink-0"
           >
-            <div className="w-8 h-8 rounded-lg bg-[#f5c518] text-[#1a1a1a] flex items-center justify-center font-black text-base shadow-sm group-hover:scale-105 transition-transform">
-              HR
-            </div>
+            <HomeRunLogo className="w-8 h-8 rounded-lg shadow-sm group-hover:scale-105 transition-transform" />
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-base tracking-tight leading-none text-white font-display">
@@ -98,7 +96,7 @@ export default function TopNavBar({
                       : "bg-emerald-900/60 hover:bg-emerald-800 text-[#f5c518] border border-[#f5c518]/50"
                   }`}
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <HomeRunThunder className="w-3.5 h-3.5" />
                   <span>{item.label}</span>
                 </button>
               );

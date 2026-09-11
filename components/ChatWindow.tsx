@@ -6,7 +6,8 @@ import { Message, CartItem, Suggestion } from "@/lib/types";
 import MessageBubble from "./MessageBubble";
 import CartSidebar from "./CartSidebar";
 import QuickActions from "./QuickActions";
-import { Send, ShoppingCart, Sparkles, RefreshCw } from "lucide-react";
+import { Send, ShoppingCart, RefreshCw } from "lucide-react";
+import { HomeRunLogo, HomeRunThunder } from "./HomeRunLogo";
 
 interface ChatWindowProps {
   messages: Message[];
@@ -54,10 +55,8 @@ export default function ChatWindow({
       {/* App Header */}
       <div className="bg-homerun-green text-white px-5 py-3.5 flex items-center justify-between shadow-sm shrink-0">
         <div className="flex items-center gap-3">
-          {/* Yellow HR Logo Square */}
-          <div className="w-10 h-10 rounded-xl bg-homerun-yellow flex items-center justify-center text-homerun-green font-black text-xl shadow-xs shrink-0 select-none">
-            HR
-          </div>
+          {/* Official HomeRun Logo Square */}
+          <HomeRunLogo className="w-10 h-10 rounded-xl shadow-xs shrink-0 select-none" />
           <div>
             <div className="flex items-center gap-2">
               <h2 className="font-bold text-base tracking-tight leading-none">HomeRun</h2>
@@ -111,8 +110,8 @@ export default function ChatWindow({
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-2">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8">
-                <div className="w-14 h-14 rounded-2xl bg-homerun-yellow/20 flex items-center justify-center text-homerun-green-dark mb-3">
-                  <Sparkles className="w-7 h-7 text-homerun-green" />
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mb-3">
+                  <HomeRunThunder className="w-7 h-7 text-homerun-green" />
                 </div>
                 <h3 className="text-base font-bold text-slate-800">
                   Welcome to HomeRun Material Assistant

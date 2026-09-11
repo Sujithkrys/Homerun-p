@@ -19,6 +19,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import confetti from "canvas-confetti";
+import { HomeRunLogo, HomeRunThunder } from "./HomeRunLogo";
 
 interface MobileAppChatProps {
   messages: Message[];
@@ -93,10 +94,8 @@ export default function MobileAppChat({
       {/* App Header (padded top for status bar) */}
       <div className="bg-homerun-green text-white pt-11 pb-3 px-4 flex items-center justify-between shadow-xs shrink-0 select-none">
         <div className="flex items-center gap-2.5">
-          {/* Yellow HR Logo */}
-          <div className="w-8 h-8 rounded-lg bg-homerun-yellow flex items-center justify-center text-homerun-green font-black text-sm shadow-xs shrink-0">
-            HR
-          </div>
+          {/* Official HomeRun Logo */}
+          <HomeRunLogo className="w-8 h-8 rounded-lg shadow-xs" />
           <div className="leading-tight">
             <h2 className="text-sm font-bold tracking-tight text-white font-display flex items-center gap-1.5">
               <span>HomeRun Assistant</span>
@@ -144,8 +143,8 @@ export default function MobileAppChat({
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-3 py-6">
-            <div className="w-12 h-12 rounded-2xl bg-homerun-yellow/20 flex items-center justify-center text-homerun-green mb-2">
-              <Sparkles className="w-6 h-6 text-homerun-green" />
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center mb-3">
+              <HomeRunThunder className="w-6 h-6 text-homerun-green" />
             </div>
             <h3 className="text-sm font-bold text-slate-800">
               HomeRun Mobile Assistant

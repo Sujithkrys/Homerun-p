@@ -2,7 +2,7 @@
 
 import React from "react";
 import { AppScreen } from "@/lib/types";
-import { Sparkles } from "lucide-react";
+import { HomeRunThunder } from "./HomeRunLogo";
 
 interface BottomNavBarProps {
   currentScreen: AppScreen;
@@ -75,7 +75,7 @@ export default function BottomNavBar({ currentScreen, onNavigate }: BottomNavBar
           }`}
           aria-label="AI Estimator"
         >
-          <Sparkles className="w-6 h-6 text-[#f5c518] animate-pulse" />
+          <HomeRunThunder className="w-6 h-6 text-[#f5c518] animate-pulse" />
         </button>
         <span
           className={`text-[10px] mt-0.5 font-extrabold tracking-tight ${

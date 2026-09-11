@@ -31,6 +31,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import confetti from "canvas-confetti";
+import { HomeRunThunder } from "./HomeRunLogo";
 
 interface WebPlatformProps {
   currentScreen: AppScreen;
@@ -190,7 +191,7 @@ export default function WebPlatform({
               <div className="p-3.5 px-5 bg-white border-b border-slate-200/80 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-xl bg-homerun-green text-white flex items-center justify-center font-bold shadow-xs">
-                    <Sparkles className="w-4 h-4 text-homerun-yellow" />
+                    <HomeRunThunder className="w-4 h-4 text-homerun-yellow" />
                   </div>
                   <div>
                     <h3 className="font-extrabold text-sm text-slate-900 leading-tight font-display">
