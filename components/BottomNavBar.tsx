@@ -65,7 +65,28 @@ export default function BottomNavBar({ currentScreen, onNavigate }: BottomNavBar
         </span>
       </button>
 
-      {/* 3. Orders Tab */}
+      {/* 3. Floating AI Estimator Center Button (Green Circle Hero CTA) */}
+      <div className="flex flex-col items-center justify-center flex-1 relative -top-3.5">
+        <button
+          type="button"
+          onClick={() => onNavigate("ai-estimator")}
+          className={`w-12 h-12 rounded-full bg-[#1a7a3a] text-white flex items-center justify-center shadow-lg border-2 border-white hover:bg-emerald-800 active:scale-95 transition-all cursor-pointer ${
+            currentScreen === "ai-estimator" ? "ring-2 ring-[#f5c518] ring-offset-2 scale-105" : ""
+          }`}
+          aria-label="AI Estimator"
+        >
+          <Sparkles className="w-6 h-6 text-[#f5c518] animate-pulse" />
+        </button>
+        <span
+          className={`text-[10px] mt-0.5 font-extrabold tracking-tight ${
+            currentScreen === "ai-estimator" ? "text-[#1a7a3a]" : "text-[#555555]"
+          }`}
+        >
+          Estimate
+        </span>
+      </div>
+
+      {/* 4. Orders Tab */}
       <button
         type="button"
         onClick={() => onNavigate("orders")}
@@ -94,7 +115,7 @@ export default function BottomNavBar({ currentScreen, onNavigate }: BottomNavBar
         </span>
       </button>
 
-      {/* 4. Account Tab */}
+      {/* 5. Account Tab */}
       <button
         type="button"
         onClick={() => onNavigate("account")}
@@ -117,21 +138,6 @@ export default function BottomNavBar({ currentScreen, onNavigate }: BottomNavBar
         >
           Account
         </span>
-      </button>
-
-      {/* 5. AI Estimate (Blue rounded rectangle matching PRICE DROP) */}
-      <button
-        type="button"
-        onClick={() => onNavigate("ai-estimator")}
-        className={`px-3 py-1.5 rounded-lg bg-[#0047cc] hover:bg-[#003bb8] text-white flex flex-col items-center justify-center shadow-xs cursor-pointer active:scale-95 transition-transform mr-1 ${
-          currentScreen === "ai-estimator" ? "ring-2 ring-yellow-400 ring-offset-1" : ""
-        }`}
-      >
-        <div className="flex items-center gap-0.5">
-          <Sparkles className="w-3 h-3 text-yellow-300 animate-pulse" />
-          <span className="text-[10px] font-black tracking-wider leading-none">AI</span>
-        </div>
-        <span className="text-[9px] font-black tracking-wider leading-tight">ESTIMATE</span>
       </button>
     </div>
   );
