@@ -1,144 +1,162 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { SYSTEM_PROMPT } from "@/lib/system-prompt";
 
-export async function POST(req: Request) {
-  console.log("=== /api/chat called ===");
+// Determine which provider to use based on available API keys
+function getProvider(): "sarvam" | "gemini" {
+  if (process.env.SARVAM_API_KEY) return "sarvam";
+  if (process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_API_KEY) return "gemini";
+  return "gemini"; // default
+}
 
-  // Check API key
-  const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.error("ERROR: GOOGLE_GEMINI_API_KEY is not set!");
-    return Response.json(
-      {
-        message:
-          "⚠️ AI is not configured. The API key is missing. Please add GOOGLE_GEMINI_API_KEY to your environment variables.",
-        cart_items: [],
-        estimation_summary: null,
-      },
-      { status: 200 } // Return 200 so the frontend doesn't crash — the error shows as a bot message
-    );
+// Compact system prompt for Sarvam to stay well within its 32,000 token context window
+function getSarvamSystemPrompt(): string {
+  return SYSTEM_PROMPT
+    .replace(/(\n\s{2,})/g, " ")
+    .replace(/:\s+/g, ":")
+    .replace(/,\s+/g, ",");
+}
+
+// ---- SARVAM AI (OpenAI-compatible API) ----
+async function callSarvam(message: string, history: any[]) {
+  const apiKey = process.env.SARVAM_API_KEY!;
+
+  // Build messages array in OpenAI format
+  const messages: any[] = [
+    { role: "system", content: getSarvamSystemPrompt() },
+  ];
+
+  // Add conversation history
+  if (history && history.length > 0) {
+    const recentHistory = history.slice(-10);
+    for (const msg of recentHistory) {
+      messages.push({
+        role: msg.role === "assistant" ? "assistant" : "user",
+        content: msg.content,
+      });
+    }
   }
 
-  console.log("API key found, length:", apiKey.length);
+  // Add current user message
+  messages.push({ role: "user", content: message });
+
+  // Use sarvam-105b-conversations (latest active conversational chat model on Sarvam API; 'sarvam-m' is deprecated by Sarvam)
+  const model = process.env.SARVAM_MODEL || "sarvam-105b-conversations";
+
+  const response = await fetch("https://api.sarvam.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: messages,
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 4096,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Sarvam API error (${response.status}): ${errorBody}`);
+  }
+
+  const data = await response.json();
+  const responseText = data.choices[0].message.content;
+  return responseText;
+}
+
+// ---- GEMINI (Google Generative AI) ----
+async function callGemini(message: string, history: any[]) {
+  const { GoogleGenerativeAI } = await import("@google/generative-ai");
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("Missing Google Gemini API key");
+  const genAI = new GoogleGenerativeAI(apiKey);
+
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    systemInstruction: SYSTEM_PROMPT,
+  });
+
+  // Build chat history in Gemini format
+  const chatHistory = (history || [])
+    .slice(-10)
+    .map((msg: any) => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content || "" }],
+    }))
+    .filter((msg: any) => msg.parts[0].text.trim().length > 0);
+
+  // Sanitize: ensure history starts with "user" and alternates
+  const sanitized: any[] = [];
+  for (const msg of chatHistory) {
+    if (sanitized.length === 0) {
+      if (msg.role === "user") sanitized.push(msg);
+    } else {
+      const prev = sanitized[sanitized.length - 1];
+      if (msg.role !== prev.role) sanitized.push(msg);
+    }
+  }
+  // Remove trailing user message (sendMessage will add the current one)
+  if (sanitized.length > 0 && sanitized[sanitized.length - 1].role === "user") {
+    sanitized.pop();
+  }
+
+  const chat = model.startChat({ history: sanitized });
+  const result = await chat.sendMessage(message);
+  return result.response.text();
+}
+
+// ---- MAIN ROUTE ----
+export async function POST(req: Request) {
+  const provider = getProvider();
+
+  // Check that we have at least one API key
+  if (!process.env.SARVAM_API_KEY && !process.env.GOOGLE_GEMINI_API_KEY && !process.env.GEMINI_API_KEY) {
+    return Response.json({
+      message: "⚠️ No API key configured. Add SARVAM_API_KEY or GOOGLE_GEMINI_API_KEY to your environment variables.",
+      recommended_products: [],
+      cart_items: [],
+      estimation_summary: null,
+    });
+  }
 
   try {
-    const body = await req.json();
-    const { message, history } = body;
-
-    console.log("User message:", message);
-    console.log("History length:", history?.length || 0);
+    const { message, history } = await req.json();
 
     if (!message || typeof message !== "string") {
       return Response.json({
         message: "I didn't receive a message. Please try again.",
+        recommended_products: [],
         cart_items: [],
         estimation_summary: null,
       });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const candidateModels = ["gemini-3.6-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    console.log(`[${provider.toUpperCase()}] User: ${message}`);
 
-    // Build and sanitize chat history for Gemini:
-    // 1. Map role "assistant" -> "model", filter empty messages
-    // 2. Remove any leading "model" messages (Gemini requires history to start with "user")
-    // 3. Ensure strictly alternating user <-> model sequence
-    // 4. Exclude the current user message from history if present so chat.sendMessage(message) sends it
-    const rawHistory = (history || [])
-      .slice(-10)
-      .map((msg: any) => ({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content || "" }],
-      }))
-      .filter((msg: any) => msg.parts[0].text.trim().length > 0);
-
-    const chatHistory: Array<{ role: string; parts: Array<{ text: string }> }> = [];
-    for (const msg of rawHistory) {
-      if (chatHistory.length === 0) {
-        // Gemini strictly requires the first message in history to be "user"
-        if (msg.role === "user") {
-          chatHistory.push(msg);
-        }
-      } else {
-        // Gemini requires alternating roles
-        const prev = chatHistory[chatHistory.length - 1];
-        if (msg.role !== prev.role) {
-          chatHistory.push(msg);
-        }
-      }
+    // Call the active provider
+    let responseText: string;
+    if (provider === "sarvam") {
+      responseText = await callSarvam(message, history || []);
+    } else {
+      responseText = await callGemini(message, history || []);
     }
 
-    // If the last message in history is "user", remove it so chat.sendMessage(message) provides the active user turn
-    if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === "user") {
-      chatHistory.pop();
-    }
+    console.log(`[${provider.toUpperCase()}] Response length: ${responseText.length}`);
 
-    console.log("Sending to Gemini with", chatHistory.length, "sanitized history messages");
-
-    let responseText = "";
-    let lastError: any = null;
-
-    for (const modelName of candidateModels) {
-      try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          systemInstruction: SYSTEM_PROMPT,
-        });
-
-        // Try with 1 retry for resilience against 503 / network blips
-        for (let attempt = 0; attempt < 2; attempt++) {
-          try {
-            const chat = model.startChat({ history: chatHistory });
-            const result = await chat.sendMessage(message);
-            responseText = result.response.text();
-            break;
-          } catch (chatErr: any) {
-            if (attempt === 0 && (chatErr.status === 503 || String(chatErr).includes("503"))) {
-              console.warn(`Attempt 1 failed on ${modelName} with 503, retrying in 800ms...`);
-              await new Promise((r) => setTimeout(r, 800));
-              continue;
-            }
-            throw chatErr;
-          }
-        }
-
-        if (responseText) {
-          console.log(`Success with model ${modelName}, response length:`, responseText.length);
-          break;
-        }
-      } catch (err: any) {
-        lastError = err;
-        console.warn(`Model ${modelName} failed:`, err.message);
-        // If it's a 404 (model not found), try next model in candidate list
-        const errMsg = (err.message || "").toLowerCase();
-        if (errMsg.includes("404") || errMsg.includes("not found")) {
-          continue;
-        }
-        // If other error, throw to outer catch
-        throw err;
-      }
-    }
-
-    if (!responseText) {
-      throw lastError || new Error("All candidate models failed to respond");
-    }
-
-    console.log("Raw response preview:", responseText.substring(0, 200));
-
-    // Parse JSON from response
-    let parsed: any;
+    // Parse JSON from response (both providers might wrap in ```json blocks)
+    let parsed;
     try {
       let jsonStr = responseText;
-      // Strip markdown code fences if present
       if (jsonStr.includes("```json")) {
         jsonStr = jsonStr.split("```json")[1].split("```")[0].trim();
       } else if (jsonStr.includes("```")) {
         jsonStr = jsonStr.split("```")[1].split("```")[0].trim();
       }
       parsed = JSON.parse(jsonStr);
-      console.log("JSON parsed successfully");
-    } catch (parseError) {
-      console.warn("Failed to parse JSON from Gemini response, using raw text");
+    } catch {
+      console.warn(`[${provider.toUpperCase()}] Failed to parse JSON, using raw text`);
       parsed = {
         message: responseText,
         recommended_products: [],
@@ -147,52 +165,33 @@ export async function POST(req: Request) {
       };
     }
 
+    // Ensure all expected fields exist (in case the model skips one)
+    parsed.message = parsed.message || responseText;
+    parsed.recommended_products = parsed.recommended_products || [];
+    parsed.cart_items = parsed.cart_items || [];
+    parsed.estimation_summary = parsed.estimation_summary || null;
+
     return Response.json(parsed);
+
   } catch (error: any) {
-    console.error("=== GEMINI API ERROR ===");
-    console.error("Error name:", error.name);
-    console.error("Error message:", error.message);
-    console.error("Full error:", JSON.stringify(error, null, 2));
+    console.error(`[${provider.toUpperCase()}] Error:`, error.message);
 
-    // Return a friendly error message as a bot response (not a 500)
-    let userMessage =
-      "Oops, I'm having trouble connecting right now. Please try again in a moment.";
-
+    let userMessage = "Oops, I'm having trouble connecting. Please try again.";
     const errMsg = (error.message || "").toLowerCase();
-    if (
-      errMsg.includes("api key") ||
-      errMsg.includes("401") ||
-      errMsg.includes("unauthorized") ||
-      errMsg.includes("key not valid")
-    ) {
-      userMessage =
-        "⚠️ The API key seems invalid. Please check GOOGLE_GEMINI_API_KEY in your environment variables.";
-    } else if (
-      (errMsg.includes("model") && errMsg.includes("not found")) ||
-      errMsg.includes("404")
-    ) {
-      userMessage =
-        "⚠️ The AI model was not found. Please verify the Gemini model configuration.";
-    } else if (
-      errMsg.includes("429") ||
-      errMsg.includes("quota") ||
-      errMsg.includes("rate")
-    ) {
-      userMessage =
-        "⚠️ Rate limit reached. The free tier allows 15 requests per minute. Please wait a moment and try again.";
-    } else if (errMsg.includes("503") || errMsg.includes("unavailable")) {
-      userMessage =
-        "⚠️ Google's AI service is temporarily busy. Please wait a few seconds and try your message again.";
+
+    if (errMsg.includes("api key") || errMsg.includes("401") || errMsg.includes("unauthorized")) {
+      userMessage = `⚠️ The ${provider === "sarvam" ? "Sarvam" : "Gemini"} API key is invalid. Check your environment variables.`;
+    } else if (errMsg.includes("model") || errMsg.includes("404")) {
+      userMessage = `⚠️ Model not found on ${provider === "sarvam" ? "Sarvam" : "Gemini"}. The model name may need updating.`;
+    } else if (errMsg.includes("429") || errMsg.includes("quota") || errMsg.includes("rate")) {
+      userMessage = "⚠️ Rate limit reached. Please wait a moment and try again.";
     }
 
-    return Response.json(
-      {
-        message: userMessage,
-        recommended_products: [],
-        cart_items: [],
-        estimation_summary: null,
-      },
-      { status: 200 } // Return 200 so frontend handles it as a normal bot message
-    );
+    return Response.json({
+      message: userMessage,
+      recommended_products: [],
+      cart_items: [],
+      estimation_summary: null,
+    });
   }
 }
