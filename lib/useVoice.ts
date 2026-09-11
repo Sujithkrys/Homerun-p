@@ -78,11 +78,51 @@ export function useVoice(options?: UseVoiceOptions): UseVoiceReturn {
     }
   };
 
+// Encode Float32Array[] to WAV Blob
+const encodeWAV = (audioData: Float32Array[], sampleRate: number): Blob => {
+  let totalLength = 0;
+  for (let i = 0; i < audioData.length; i++) {
+    totalLength += audioData[i].length;
+  }
+  
+  const buffer = new ArrayBuffer(44 + totalLength * 2);
+  const view = new DataView(buffer);
+
+  const writeString = (offset: number, string: string) => {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  };
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + totalLength * 2, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeString(36, 'data');
+  view.setUint32(40, totalLength * 2, true);
+
+  let offset = 44;
+  for (let i = 0; i < audioData.length; i++) {
+    const input = audioData[i];
+    for (let j = 0; j < input.length; j++, offset += 2) {
+      let s = Math.max(-1, Math.min(1, input[j]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+  }
+
+  return new Blob([view], { type: 'audio/wav' });
+};
+
   // Internal stop handler
   const executeStop = useCallback(async (): Promise<string | null> => {
-    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === "inactive") {
-      return null;
-    }
+    if (!isRecordingRef.current) return null;
 
     // Cancel silence detection loops
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
@@ -92,65 +132,55 @@ export function useVoice(options?: UseVoiceOptions): UseVoiceReturn {
       audioContextRef.current = null;
     }
 
-    return new Promise((resolve) => {
-      const mediaRecorder = mediaRecorderRef.current!;
+    // Stop all mic tracks
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    isRecordingRef.current = false;
+    setIsRecording(false);
+    setIsProcessingSTT(true);
 
-      mediaRecorder.onstop = async () => {
-        // Stop all mic tracks
-        streamRef.current?.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-        isRecordingRef.current = false;
-        setIsRecording(false);
-        setIsProcessingSTT(true);
+    try {
+      const audioData = audioChunksRef.current as unknown as Float32Array[];
+      audioChunksRef.current = [];
 
-        try {
-          const audioBlob = new Blob(audioChunksRef.current, {
-            type: mediaRecorder.mimeType || "audio/webm",
-          });
-          audioChunksRef.current = [];
+      if (!audioData || audioData.length === 0) {
+        setIsProcessingSTT(false);
+        return null;
+      }
 
-          if (audioBlob.size < 250) {
-            setIsProcessingSTT(false);
-            resolve(null);
-            return;
-          }
+      const audioBlob = encodeWAV(audioData, 16000);
 
-          const ext = (mediaRecorder.mimeType || "").includes("mp4") ? "mp4" : "webm";
-          const formData = new FormData();
-          formData.append("audio", audioBlob, `recording.${ext}`);
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "recording.wav");
 
-          const response = await fetch("/api/speech-to-text", {
-            method: "POST",
-            body: formData,
-          });
+      const response = await fetch("/api/speech-to-text", {
+        method: "POST",
+        body: formData,
+      });
 
-          const data = await response.json();
+      const data = await response.json();
 
-          if (data.error) {
-            setError(data.error);
-            resolve(null);
-          } else if (!data.transcript || data.transcript.trim() === "") {
-            setError("Could not understand your speech. Please speak clearly.");
-            resolve(null);
-          } else {
-            const cleanTranscript = data.transcript.trim();
-            resolve(cleanTranscript);
-            // Trigger auto-callback if provided
-            if (optionsRef.current?.onSpeechResult) {
-              optionsRef.current.onSpeechResult(cleanTranscript);
-            }
-          }
-        } catch (err: any) {
-          console.error("[Voice] STT error:", err.message);
-          setError("Speech recognition failed. Please try again.");
-          resolve(null);
-        } finally {
-          setIsProcessingSTT(false);
+      if (data.error) {
+        setError(data.error);
+        return null;
+      } else if (!data.transcript || data.transcript.trim() === "") {
+        setError("Could not understand your speech. Please speak clearly.");
+        return null;
+      } else {
+        const cleanTranscript = data.transcript.trim();
+        // Trigger auto-callback if provided
+        if (optionsRef.current?.onSpeechResult) {
+          optionsRef.current.onSpeechResult(cleanTranscript);
         }
-      };
-
-      mediaRecorder.stop();
-    });
+        return cleanTranscript;
+      }
+    } catch (err: any) {
+      console.error("[Voice] STT error:", err.message);
+      setError("Speech recognition failed. Please try again.");
+      return null;
+    } finally {
+      setIsProcessingSTT(false);
+    }
   }, []);
 
   // Start recording from microphone
@@ -183,53 +213,44 @@ export function useVoice(options?: UseVoiceOptions): UseVoiceReturn {
       streamRef.current = stream;
       audioChunksRef.current = [];
 
-      // 3. Determine best supported audio MIME type across all browsers (including iOS Safari)
-      let mimeType = "";
-      if (typeof MediaRecorder !== "undefined") {
-        if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
-          mimeType = "audio/webm;codecs=opus";
-        } else if (MediaRecorder.isTypeSupported("audio/webm")) {
-          mimeType = "audio/webm";
-        } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
-          mimeType = "audio/mp4";
-        }
-      }
-
-      const mediaRecorder = new MediaRecorder(
-        stream,
-        mimeType ? { mimeType } : undefined
-      );
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+      // 3. Setup AudioContext for VAD and WAV recording
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioContextClass({ sampleRate: 16000 });
+      audioContextRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(stream);
+      
+      // WAV Recording via ScriptProcessor (MediaRecorder outputs webm/mp4 which Sarvam API rejects)
+      const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+      const audioData: Float32Array[] = [];
+      
+      processor.onaudioprocess = (e) => {
+        if (!isRecordingRef.current) return;
+        audioData.push(new Float32Array(e.inputBuffer.getChannelData(0)));
       };
+      
+      // We must connect processor to destination for onaudioprocess to fire in Chrome
+      source.connect(processor);
+      processor.connect(audioCtx.destination);
+      
+      // Store reference to audio data arrays instead of Blob chunks
+      (audioChunksRef as any).current = audioData;
 
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(200);
       isRecordingRef.current = true;
       setIsRecording(true);
 
       // 4. Voice Activity Detection (VAD) / Silence Auto-Endpointing
       try {
-        const AudioContextClass =
-          window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioContextClass) {
-          const audioCtx = new AudioContextClass();
-          audioContextRef.current = audioCtx;
-          const source = audioCtx.createMediaStreamSource(stream);
-          const analyser = audioCtx.createAnalyser();
-          analyser.fftSize = 512;
-          source.connect(analyser);
-          analyserRef.current = analyser;
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        source.connect(analyser);
+        analyserRef.current = analyser;
 
-          const dataArray = new Uint8Array(analyser.frequencyBinCount);
-          let silenceStart: number | null = null;
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        let silenceStart: number | null = null;
 
-          const monitorAudio = () => {
-            if (!isRecordingRef.current) return;
-            analyser.getByteFrequencyData(dataArray);
+        const monitorAudio = () => {
+          if (!isRecordingRef.current) return;
+          analyser.getByteFrequencyData(dataArray);
 
             let sum = 0;
             for (let i = 0; i < dataArray.length; i++) {
