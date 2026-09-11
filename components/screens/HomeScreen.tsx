@@ -75,7 +75,7 @@ export default function HomeScreen({
   };
 
   return (
-    <div className="w-full flex flex-col bg-[#fbfbfb] min-h-full select-none">
+    <div className="w-full h-full flex-1 flex flex-col min-h-0 bg-[#fbfbfb] overflow-hidden select-none">
       {/* Real HomeRun Header on Mobile */}
       {!isWeb && (
         <HomeRunHeader
@@ -86,8 +86,8 @@ export default function HomeScreen({
 
       {/* Main Scrollable Body */}
       <div
-        className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar ${
-          isWeb ? "p-6 md:p-8 space-y-4 max-w-6xl mx-auto w-full" : "p-3 space-y-2.5"
+        className={`flex-1 w-full overflow-y-auto overflow-x-hidden no-scrollbar ${
+          isWeb ? "p-6 md:p-8 space-y-4 max-w-6xl mx-auto" : "p-3 space-y-2.5"
         }`}
       >
         {/* 1. Real HomeRun Search Bar: Clean input field (empty when writing, relevant searches when empty) */}

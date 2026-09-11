@@ -7,6 +7,7 @@ import ProjectEstimateCard from "./ProjectEstimateCard";
 import SuggestionChips from "./SuggestionChips";
 import DownloadEstimateButton from "./DownloadEstimateButton";
 import WhatsAppText from "@/lib/formatWhatsApp";
+import ProductRecommendation from "./ProductRecommendation";
 
 interface MessageBubbleProps {
   message: Message;
@@ -14,6 +15,8 @@ interface MessageBubbleProps {
   allCartItems?: CartItem[];
   onActionClick?: (action: "view-cart" | "checkout" | "add-more") => void;
   onAddSuggestion?: (suggestion: Suggestion) => void;
+  onAddToCart?: (product: CartItem) => void;
+  onAddAllToCart?: (products: CartItem[]) => void;
 }
 
 // Simple markdown formatter helper for bold, bullets, and line breaks
@@ -82,6 +85,8 @@ export default function MessageBubble({
   allCartItems = [],
   onActionClick,
   onAddSuggestion,
+  onAddToCart,
+  onAddAllToCart,
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const hasCartItems = message.cart_items && message.cart_items.length > 0;
@@ -130,6 +135,53 @@ export default function MessageBubble({
               onAddSuggestion={onAddSuggestion}
               variant="whatsapp"
             />
+          )}
+
+          {/* WhatsApp Formatted Recommended Products List */}
+          {!isUser && message.recommended_products && message.recommended_products.length > 0 && (
+            <div className="mt-2.5 pt-2 border-t border-slate-200/80 font-sans text-xs space-y-2">
+              <div className="font-bold text-slate-900 text-[13px] flex items-center gap-1.5">
+                <span>📋</span>
+                <strong>Recommended Materials</strong>
+              </div>
+              <div className="space-y-1.5">
+                {message.recommended_products.map((item, idx) => {
+                  const numberEmojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
+                  return (
+                    <div key={idx} className="bg-slate-50/90 p-2 rounded-md border border-slate-200/60">
+                      <div className="font-bold text-slate-900 flex items-start justify-between gap-1">
+                        <span>
+                          {numberEmojis[idx] || `${idx + 1}.`} <strong>{item.name}</strong> × {item.quantity} {item.unit}
+                        </span>
+                        <span className="shrink-0 font-bold text-slate-900">
+                          — ₹{item.total.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      {item.reason && (
+                        <p className="text-[11px] text-slate-500 mt-0.5 ml-5 italic">
+                          {item.reason}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="pt-1.5 border-t border-dashed border-slate-300 flex justify-between items-center text-xs font-bold text-slate-900">
+                <span className="flex items-center gap-1">
+                  <span>💰</span>
+                  <strong>Estimated Total:</strong>
+                </span>
+                <strong className="text-[#075e54] font-extrabold text-[13px]">
+                  ₹{message.recommended_products.reduce((s, i) => s + i.total, 0).toLocaleString("en-IN")}
+                </strong>
+              </div>
+              <div className="text-[11px] text-slate-600 flex items-center justify-between font-medium">
+                <span>🚚 Free delivery</span>
+                <span>|</span>
+                <span>⚡ 60 min</span>
+              </div>
+            </div>
           )}
 
           {/* In-Bubble WhatsApp Cart Card (When Cart Items are Present) */}
@@ -262,6 +314,29 @@ export default function MessageBubble({
               </p>
             </div>
           </div>
+        )}
+
+        {/* Recommended Products with Selectable Checkboxes (Web & Mobile) */}
+        {!isUser && message.recommended_products && message.recommended_products.length > 0 && (
+          <ProductRecommendation
+            products={message.recommended_products}
+            onAddToCart={onAddToCart || ((p) => onAddSuggestion?.({
+              product_id: p.product_id,
+              name: p.name,
+              reason: p.reason || "",
+              estimated_qty: p.quantity,
+              unit: p.unit,
+              unit_price: p.unit_price,
+            }))}
+            onAddAllToCart={onAddAllToCart || ((items) => items.forEach(p => (onAddToCart ? onAddToCart(p) : onAddSuggestion?.({
+              product_id: p.product_id,
+              name: p.name,
+              reason: p.reason || "",
+              estimated_qty: p.quantity,
+              unit: p.unit,
+              unit_price: p.unit_price,
+            }))))}
+          />
         )}
 
         {/* 1. Multi-Room Project Estimate Card */}

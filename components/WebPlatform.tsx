@@ -45,6 +45,8 @@ interface WebPlatformProps {
   onClearCart: () => void;
   onResetChat?: () => void;
   onAddSuggestion: (suggestion: Suggestion) => void;
+  onAddToCart?: (product: CartItem) => void;
+  onAddAllToCart?: (products: CartItem[]) => void;
   unloadingService: boolean;
   setUnloadingService: (value: boolean | ((prev: boolean) => boolean)) => void;
   gstin: string;
@@ -68,6 +70,8 @@ export default function WebPlatform({
   onClearCart,
   onResetChat,
   onAddSuggestion,
+  onAddToCart,
+  onAddAllToCart,
   unloadingService,
   setUnloadingService,
   gstin,
@@ -223,6 +227,8 @@ export default function WebPlatform({
                   isLoading={isLoading}
                   onSendMessage={onSendMessage}
                   onAddSuggestion={onAddSuggestion}
+                  onAddToCart={onAddToCart}
+                  onAddAllToCart={onAddAllToCart}
                   onOpenCart={() => setIsSidebarCartOpen(true)}
                   onResetChat={onResetChat}
                   variant="web"

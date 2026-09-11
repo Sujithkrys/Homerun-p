@@ -23,7 +23,7 @@ export default function CategoriesScreen({
   const isWeb = variant === "web";
 
   return (
-    <div className="w-full flex flex-col bg-[#fbfbfb] min-h-full select-none">
+    <div className="w-full h-full flex-1 flex flex-col min-h-0 bg-[#fbfbfb] overflow-hidden select-none">
       {/* Real HomeRun Header */}
       {!isWeb && (
         <HomeRunHeader
@@ -34,8 +34,8 @@ export default function CategoriesScreen({
 
       {/* Main Body */}
       <div
-        className={`flex-1 overflow-y-auto overflow-x-hidden no-scrollbar ${
-          isWeb ? "p-6 md:p-8 max-w-6xl mx-auto space-y-6 w-full" : "p-3 space-y-4"
+        className={`flex-1 w-full overflow-y-auto overflow-x-hidden no-scrollbar ${
+          isWeb ? "p-6 md:p-8 max-w-6xl mx-auto space-y-6" : "p-3 space-y-4"
         }`}
       >
         {/* Search Bar */}

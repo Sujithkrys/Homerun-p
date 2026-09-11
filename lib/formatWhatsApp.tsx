@@ -1,8 +1,33 @@
 import React from "react";
 
+function renderSegmentWithLinks(segment: string, baseKey: string | number): React.ReactNode[] {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = segment.split(urlRegex);
+  return parts.map((part, pIdx) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={`${baseKey}-url-${pIdx}`}
+          href={part}
+          onClick={(e) => {
+            e.preventDefault();
+            alert(`Opening payment link: ${part}`);
+          }}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline font-medium break-all hover:text-blue-800 transition-colors"
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 /**
  * Parses inline text for bold formatting (**bold** or *bold*) and italic (_italic_)
- * while stripping stray markdown backticks and quotes.
+ * while stripping stray markdown backticks and quotes, and converting URLs to clickable links.
  */
 function parseInlineFormatting(text: string): React.ReactNode[] {
   // Strip stray backticks `code` -> code, and leading > quote markers
@@ -16,7 +41,7 @@ function parseInlineFormatting(text: string): React.ReactNode[] {
     if (token.startsWith("**") && token.endsWith("**") && token.length > 4) {
       return (
         <strong key={idx} className="font-bold text-slate-900">
-          {token.slice(2, -2)}
+          {renderSegmentWithLinks(token.slice(2, -2), idx)}
         </strong>
       );
     }
@@ -24,7 +49,7 @@ function parseInlineFormatting(text: string): React.ReactNode[] {
     if (token.startsWith("*") && token.endsWith("*") && token.length > 2 && !token.startsWith("**")) {
       return (
         <strong key={idx} className="font-bold text-slate-900">
-          {token.slice(1, -1)}
+          {renderSegmentWithLinks(token.slice(1, -1), idx)}
         </strong>
       );
     }
@@ -32,11 +57,11 @@ function parseInlineFormatting(text: string): React.ReactNode[] {
     if (token.startsWith("_") && token.endsWith("_") && token.length > 2) {
       return (
         <em key={idx} className="italic text-slate-800">
-          {token.slice(1, -1)}
+          {renderSegmentWithLinks(token.slice(1, -1), idx)}
         </em>
       );
     }
-    return token;
+    return renderSegmentWithLinks(token, idx);
   });
 }
 

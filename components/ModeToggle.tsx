@@ -8,16 +8,29 @@ export type DemoMode = "web" | "mobile" | "whatsapp";
 interface ModeToggleProps {
   mode: DemoMode;
   onModeChange: (mode: DemoMode) => void;
-  cartItemCount: number;
+  cartItemCount?: number;
+  modeCartCounts?: Record<DemoMode, number>;
   showSubtitle?: boolean;
 }
 
 export default function ModeToggle({
   mode,
   onModeChange,
-  cartItemCount,
+  cartItemCount = 0,
+  modeCartCounts,
   showSubtitle = false,
 }: ModeToggleProps) {
+  const getCount = (m: DemoMode) => {
+    if (modeCartCounts && typeof modeCartCounts[m] === "number") {
+      return modeCartCounts[m];
+    }
+    return cartItemCount;
+  };
+
+  const webCount = getCount("web");
+  const mobileCount = getCount("mobile");
+  const whatsappCount = getCount("whatsapp");
+
   return (
     <div className="flex flex-col items-center justify-center select-none shrink-0">
       {/* 3-Way Segmented Control */}
@@ -35,9 +48,9 @@ export default function ModeToggle({
         >
           <Monitor className="w-3.5 h-3.5 shrink-0" />
           <span>Web Platform</span>
-          {cartItemCount > 0 && mode !== "web" && (
+          {webCount > 0 && mode !== "web" && (
             <span className="ml-0.5 inline-flex items-center justify-center px-1.5 py-0.2 text-[10px] font-black bg-homerun-yellow text-slate-900 rounded-full">
-              {cartItemCount}
+              {webCount}
             </span>
           )}
         </button>
@@ -55,9 +68,9 @@ export default function ModeToggle({
         >
           <Smartphone className="w-3.5 h-3.5 shrink-0" />
           <span>Mobile App</span>
-          {cartItemCount > 0 && mode !== "mobile" && (
+          {mobileCount > 0 && mode !== "mobile" && (
             <span className="ml-0.5 inline-flex items-center justify-center px-1.5 py-0.2 text-[10px] font-black bg-homerun-yellow text-slate-900 rounded-full">
-              {cartItemCount}
+              {mobileCount}
             </span>
           )}
         </button>
@@ -78,9 +91,9 @@ export default function ModeToggle({
             <path d="M16.5 13.7c-.24-.12-1.44-.71-1.66-.79-.22-.08-.38-.12-.54.12s-.63.79-.77.95c-.14.16-.28.18-.52.06-.24-.12-1.01-.37-1.92-1.19-.71-.63-1.19-1.41-1.33-1.65-.14-.24-.01-.37.11-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42s-.54-1.3-.74-1.78c-.2-.47-.4-.41-.54-.42l-.46-.01c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.6 4.12 3.64.58.25 1.03.4 1.38.51.58.18 1.11.16 1.53.1.47-.07 1.44-.59 1.64-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28z" />
           </svg>
           <span>WhatsApp</span>
-          {cartItemCount > 0 && mode !== "whatsapp" && (
+          {whatsappCount > 0 && mode !== "whatsapp" && (
             <span className="ml-0.5 inline-flex items-center justify-center px-1.5 py-0.2 text-[10px] font-black bg-homerun-yellow text-slate-900 rounded-full">
-              {cartItemCount}
+              {whatsappCount}
             </span>
           )}
         </button>

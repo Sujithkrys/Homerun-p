@@ -40,6 +40,7 @@ export interface Suggestion {
 
 export interface ChatResponse {
   message: string;
+  recommended_products?: CartItem[];
   cart_items: CartItem[];
   estimation_summary: EstimationSummary | null;
   project_estimate: ProjectEstimate | null;
@@ -50,6 +51,7 @@ export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  recommended_products?: CartItem[];
   cart_items?: CartItem[];
   estimation_summary?: EstimationSummary | null;
   project_estimate?: ProjectEstimate | null;

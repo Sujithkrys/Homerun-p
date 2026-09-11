@@ -141,6 +141,7 @@ export async function POST(req: Request) {
       console.warn("Failed to parse JSON from Gemini response, using raw text");
       parsed = {
         message: responseText,
+        recommended_products: [],
         cart_items: [],
         estimation_summary: null,
       };
@@ -187,6 +188,7 @@ export async function POST(req: Request) {
     return Response.json(
       {
         message: userMessage,
+        recommended_products: [],
         cart_items: [],
         estimation_summary: null,
       },

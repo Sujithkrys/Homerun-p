@@ -22,6 +22,8 @@ interface MobileAppProps {
   onClearCart: () => void;
   onResetChat?: () => void;
   onAddSuggestion: (suggestion: Suggestion) => void;
+  onAddToCart?: (product: CartItem) => void;
+  onAddAllToCart?: (products: CartItem[]) => void;
   unloadingService: boolean;
   setUnloadingService: (value: boolean | ((prev: boolean) => boolean)) => void;
   gstin: string;
@@ -45,6 +47,8 @@ export default function MobileApp({
   onClearCart,
   onResetChat,
   onAddSuggestion,
+  onAddToCart,
+  onAddAllToCart,
   unloadingService,
   setUnloadingService,
   gstin,
@@ -78,7 +82,7 @@ export default function MobileApp({
   return (
     <div className="w-full h-full flex flex-col bg-white overflow-hidden relative select-none">
       {/* Screen Content */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      <div className="flex-1 w-full h-full min-h-0 overflow-hidden flex flex-col">
         {currentScreen === "home" && (
           <HomeScreen
             onNavigateToEstimator={handleNavigateToEstimatorWithPrompt}
@@ -97,6 +101,8 @@ export default function MobileApp({
             isLoading={isLoading}
             onSendMessage={onSendMessage}
             onAddSuggestion={onAddSuggestion}
+            onAddToCart={onAddToCart}
+            onAddAllToCart={onAddAllToCart}
             onBack={() => onNavigate("home")}
             onOpenCart={() => setIsCartOpen(true)}
             onResetChat={onResetChat}

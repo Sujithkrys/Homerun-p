@@ -21,6 +21,8 @@ interface AIEstimatorScreenProps {
   isLoading: boolean;
   onSendMessage: (text: string) => void;
   onAddSuggestion: (suggestion: Suggestion) => void;
+  onAddToCart?: (item: CartItem) => void;
+  onAddAllToCart?: (items: CartItem[]) => void;
   onBack?: () => void;
   onOpenCart?: () => void;
   onResetChat?: () => void;
@@ -34,6 +36,8 @@ export default function AIEstimatorScreen({
   isLoading,
   onSendMessage,
   onAddSuggestion,
+  onAddToCart,
+  onAddAllToCart,
   onBack,
   onOpenCart,
   onResetChat,
@@ -187,6 +191,8 @@ export default function AIEstimatorScreen({
               variant="in-app"
               allCartItems={cart}
               onAddSuggestion={onAddSuggestion}
+              onAddToCart={onAddToCart}
+              onAddAllToCart={onAddAllToCart}
             />
           ))
         )}
