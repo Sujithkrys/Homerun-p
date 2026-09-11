@@ -321,7 +321,7 @@ export default function HomePage() {
   };
 
   return (
-    <main className="h-screen max-h-screen w-screen overflow-hidden flex flex-col justify-between bg-slate-100/70 antialiased selection:bg-homerun-yellow/40">
+    <main className="min-h-screen flex flex-col justify-between bg-slate-100/70 antialiased selection:bg-homerun-yellow/40">
       {/* 1. Minimal Top Bar (Thin line, max 36px tall) */}
       <header className="h-9 shrink-0 bg-white border-b border-slate-200/80 px-4 flex items-center justify-between select-none z-40">
         {/* Brand Logo & Name */}
@@ -365,11 +365,10 @@ export default function HomePage() {
         />
       </div>
 
-      {/* 3. Main Interactive Demo Area (Fills remaining height, NO outer scrolling) */}
-      <section className="flex-1 w-full max-w-6xl mx-auto overflow-hidden flex flex-col items-center justify-center p-1 sm:p-2 min-h-0">
+      {/* 3. Main Interactive Demo Area (Comfortable full-size frame display) */}
+      <section className="flex-1 w-full max-w-6xl mx-auto flex flex-col items-center justify-center p-2 sm:p-4">
         {mode === "web" && (
-          <div className="w-full h-full max-h-full overflow-hidden flex flex-col">
-            <WebPlatform
+          <WebPlatform
               currentScreen={currentScreen}
               onNavigate={navigateTo}
               messages={messages}
@@ -391,7 +390,6 @@ export default function HomePage() {
               onPlaceOrder={handlePlaceOrder}
               bill={currentBill}
             />
-          </div>
         )}
 
         {mode === "mobile" && (
