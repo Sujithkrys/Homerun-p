@@ -39,13 +39,41 @@ export async function POST(req: Request) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const candidateModels = ["gemini-3.6-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
 
-    // Build chat history
-    const chatHistory = (history || []).slice(-10).map((msg: any) => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }],
-    }));
+    // Build and sanitize chat history for Gemini:
+    // 1. Map role "assistant" -> "model", filter empty messages
+    // 2. Remove any leading "model" messages (Gemini requires history to start with "user")
+    // 3. Ensure strictly alternating user <-> model sequence
+    // 4. Exclude the current user message from history if present so chat.sendMessage(message) sends it
+    const rawHistory = (history || [])
+      .slice(-10)
+      .map((msg: any) => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content || "" }],
+      }))
+      .filter((msg: any) => msg.parts[0].text.trim().length > 0);
 
-    console.log("Sending to Gemini with", chatHistory.length, "history messages");
+    const chatHistory: Array<{ role: string; parts: Array<{ text: string }> }> = [];
+    for (const msg of rawHistory) {
+      if (chatHistory.length === 0) {
+        // Gemini strictly requires the first message in history to be "user"
+        if (msg.role === "user") {
+          chatHistory.push(msg);
+        }
+      } else {
+        // Gemini requires alternating roles
+        const prev = chatHistory[chatHistory.length - 1];
+        if (msg.role !== prev.role) {
+          chatHistory.push(msg);
+        }
+      }
+    }
+
+    // If the last message in history is "user", remove it so chat.sendMessage(message) provides the active user turn
+    if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === "user") {
+      chatHistory.pop();
+    }
+
+    console.log("Sending to Gemini with", chatHistory.length, "sanitized history messages");
 
     let responseText = "";
     let lastError: any = null;
