@@ -1,19 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import HomeRunHeader from "../HomeRunHeader";
 import HeroCard from "../HeroCard";
-import PlywoodBanner from "../PlywoodBanner";
 import CategoryGrid from "../CategoryGrid";
 import {
   RotateCcw,
   Truck,
   Sparkles,
-  Building2,
-  Clock,
-  ShieldCheck,
   Search,
-  Zap,
 } from "lucide-react";
 
 interface HomeScreenProps {
@@ -25,6 +20,15 @@ interface HomeScreenProps {
   onOpenCart?: () => void;
 }
 
+const ROTATING_SEARCH_TERMS = [
+  "Plywood",
+  "UltraTech Cement",
+  "Asian Paints",
+  "Wires & Cables",
+  "Roff Tile Adhesive",
+  "Dr Fixit Waterproofing",
+];
+
 export default function HomeScreen({
   onNavigateToEstimator,
   onNavigateToCategories,
@@ -34,6 +38,25 @@ export default function HomeScreen({
   onOpenCart,
 }: HomeScreenProps) {
   const isWeb = variant === "web";
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [termIndex, setTermIndex] = useState(0);
+
+  // Rotating placeholder animation (pauses when input is focused or has text)
+  useEffect(() => {
+    if (isSearchFocused || searchQuery.trim().length > 0) return;
+    const timer = setInterval(() => {
+      setTermIndex((prev) => (prev + 1) % ROTATING_SEARCH_TERMS.length);
+    }, 2500);
+
+    return () => clearInterval(timer);
+  }, [isSearchFocused, searchQuery]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = searchQuery.trim() || ROTATING_SEARCH_TERMS[termIndex];
+    onNavigateToEstimator(`Show me ${query} with prices and stock`);
+  };
 
   return (
     <div className="w-full flex flex-col bg-[#fbfbfb] min-h-full select-none">
@@ -48,20 +71,36 @@ export default function HomeScreen({
       {/* Main Scrollable Body */}
       <div
         className={`flex-1 overflow-y-auto ${
-          isWeb ? "p-6 md:p-8 space-y-6 max-w-6xl mx-auto w-full" : "p-3 space-y-3.5"
+          isWeb ? "p-6 md:p-8 space-y-5 max-w-6xl mx-auto w-full" : "p-3 space-y-3"
         }`}
       >
-        {/* 1. Real HomeRun Search Bar */}
-        <div
-          onClick={() => onNavigateToEstimator("Search for Plywood")}
-          className="w-full bg-white rounded-xl border border-[#e5e5e5] px-3.5 py-2.5 flex items-center gap-2.5 shadow-2xs cursor-pointer hover:border-[#1a7a3a] transition-colors"
+        {/* 1. Real HomeRun Search Bar (Fix 7: Normal Text Input, No Redirect on Click) */}
+        <form
+          onSubmit={handleSearchSubmit}
+          className="w-full bg-white rounded-xl border border-[#e5e5e5] px-3.5 py-2 flex items-center gap-2.5 shadow-2xs focus-within:border-[#1a7a3a] transition-colors"
         >
           <Search className="w-4 h-4 text-[#777777] shrink-0" />
-          <div className="text-xs font-medium text-[#777777] flex items-center gap-1">
-            <span>Search for</span>
-            <span className="text-[#1a7a3a] font-bold">Plywood</span>
+          <div className="flex-1 flex items-center min-w-0">
+            <span className="text-xs font-medium text-[#777777] shrink-0 mr-1.5">
+              Search for
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+              placeholder={ROTATING_SEARCH_TERMS[termIndex]}
+              className="w-full text-xs font-semibold text-[#1a7a3a] placeholder:text-[#1a7a3a]/70 placeholder:font-bold focus:outline-hidden bg-transparent"
+            />
           </div>
-        </div>
+          <button
+            type="submit"
+            className="text-[11px] font-bold text-[#1a7a3a] px-2 py-0.5 rounded-md hover:bg-[#eef7f3] transition-colors cursor-pointer shrink-0"
+          >
+            Search
+          </button>
+        </form>
 
         {/* 2. Real HomeRun Trust Badges Row (Horizontal Strip with lightning dividers) */}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 text-[10.5px] font-semibold text-[#8b1818] whitespace-nowrap">
@@ -87,59 +126,22 @@ export default function HomeScreen({
           <span>Your order will get processed at 8 AM on 11 September 2026</span>
         </div>
 
-        {/* 4. AI Estimator Hero Card (Clean White-to-Mint) */}
-        <HeroCard onTryEstimator={onNavigateToEstimator} variant={isWeb ? "web" : "mobile"} />
+        {/* 4. AI Estimator Hero Card + Promo Carousel (Fix 4: Auto-transitioning 3.5s carousel) */}
+        <HeroCard
+          onTryEstimator={onNavigateToEstimator}
+          onNavigateToCategories={onNavigateToCategories}
+          variant={isWeb ? "web" : "mobile"}
+        />
 
-        {/* 5. Real HomeRun Promotional Banner (Original Plywood & MDF) */}
-        <PlywoodBanner onClick={onNavigateToCategories} />
-
-        {/* 6. Popular Categories Grid (4 columns with Mint Cards & Product SVGs) */}
+        {/* 5. Popular Categories Grid (4 columns with Mint Cards & Product SVGs) */}
         <CategoryGrid
           onSelectCategory={onSelectCategory}
           onViewAll={onNavigateToCategories}
           variant={isWeb ? "web" : "mobile"}
         />
 
-        {/* 7. Why HomeRun Section */}
-        <div className="rounded-2xl bg-white border border-[#e5e5e5] p-3.5 sm:p-5 shadow-2xs space-y-2.5">
-          <h4 className="font-extrabold text-xs sm:text-sm text-[#1a1a1a] tracking-tight">
-            Why 10,000+ Contractors Choose HomeRun
-          </h4>
-
-          <div className={`grid gap-2.5 ${isWeb ? "grid-cols-4" : "grid-cols-2"}`}>
-            <div className="flex items-start gap-2 p-2 rounded-xl bg-[#f8fafc] border border-slate-100">
-              <Clock className="w-4 h-4 text-[#1a7a3a] shrink-0 mt-0.5" />
-              <div>
-                <h5 className="font-bold text-[11px] text-[#1a1a1a]">60-Min Delivery</h5>
-                <p className="text-[10px] text-slate-500">Across 105+ pin codes in Bangalore</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2 p-2 rounded-xl bg-[#f8fafc] border border-slate-100">
-              <RotateCcw className="w-4 h-4 text-[#1a7a3a] shrink-0 mt-0.5" />
-              <div>
-                <h5 className="font-bold text-[11px] text-[#1a1a1a]">7-Day Replacement</h5>
-                <p className="text-[10px] text-slate-500">No questions asked guarantee</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2 p-2 rounded-xl bg-[#f8fafc] border border-slate-100">
-              <Sparkles className="w-4 h-4 text-[#eab308] shrink-0 mt-0.5" />
-              <div>
-                <h5 className="font-bold text-[11px] text-[#1a1a1a]">Cashback Every Order</h5>
-                <p className="text-[10px] text-slate-500">1% on ₹100+, 2% on ₹50,000+</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2 p-2 rounded-xl bg-[#f8fafc] border border-slate-100">
-              <ShieldCheck className="w-4 h-4 text-[#1a7a3a] shrink-0 mt-0.5" />
-              <div>
-                <h5 className="font-bold text-[11px] text-[#1a1a1a]">100% Genuine</h5>
-                <p className="text-[10px] text-slate-500">UltraTech, Asian Paints, Roff</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Fix 5: Removed "Why 10,000+ Contractors Choose HomeRun" section.
+            The Home screen ends after the category grid and View All Categories link. */}
       </div>
     </div>
   );

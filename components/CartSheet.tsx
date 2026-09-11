@@ -99,7 +99,13 @@ export default function CartSheet({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end select-none">
+    <div
+      className={`${
+        isMobile
+          ? "absolute inset-0 z-50 flex flex-col justify-end"
+          : "fixed inset-0 z-50 flex justify-end"
+      } select-none overflow-hidden`}
+    >
       {/* Backdrop */}
       <div
         onClick={onClose}
@@ -108,16 +114,16 @@ export default function CartSheet({
 
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-60 bg-[#1a1a1a] text-white text-xs font-semibold px-4 py-2 rounded-full shadow-2xl border border-slate-700 animate-bounce">
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-60 bg-[#1a1a1a] text-white text-xs font-semibold px-4 py-2 rounded-full shadow-2xl border border-slate-700 animate-bounce">
           {toastMessage}
         </div>
       )}
 
-      {/* Sheet Container: Full-height bottom-sheet (~92%) for mobile, right sidebar (400px) for web */}
+      {/* Sheet Container: Bottom-sheet (~90%) strictly inside phone frame for mobile, right sidebar (420px) for web */}
       <div
         className={`relative z-10 bg-[#f8f9fa] flex flex-col shadow-2xl transition-transform duration-300 ease-out overflow-hidden ${
           isMobile
-            ? "w-full h-[92%] mt-auto rounded-t-3xl border-t border-[#e5e5e5]"
+            ? "w-full h-[90%] mt-auto rounded-t-3xl border-t border-[#e5e5e5]"
             : "w-full max-w-[420px] h-full border-l border-[#e5e5e5]"
         }`}
       >

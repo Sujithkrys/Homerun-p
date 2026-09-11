@@ -52,9 +52,9 @@ export default function WhatsAppChat({
 
   return (
     <div className="w-full h-full bg-white overflow-hidden flex flex-col relative">
-      {/* WhatsApp Header (#075e54) - pt-11 for status bar clearance */}
-      <div className="bg-[#075e54] text-white px-3.5 pt-11 pb-2.5 flex items-center justify-between shrink-0 shadow-xs select-none">
-        <div className="flex items-center gap-2">
+      {/* WhatsApp Header (#075e54) - pt-10 for status bar clearance */}
+      <div className="bg-[#075e54] text-white px-3 pt-10 pb-2 flex items-center justify-between shrink-0 shadow-xs select-none">
+        <div className="flex items-center gap-2 min-w-0">
           {/* Back arrow */}
           <button
             type="button"
@@ -65,59 +65,32 @@ export default function WhatsAppChat({
           </button>
 
           {/* Yellow HR Avatar */}
-          <div className="relative">
-            <div className="w-9 h-9 rounded-full bg-homerun-yellow flex items-center justify-center text-homerun-green font-black text-sm shadow-xs border border-white/20 select-none">
+          <div className="relative shrink-0">
+            <div className="w-8 h-8 rounded-full bg-homerun-yellow flex items-center justify-center text-homerun-green font-black text-xs shadow-xs border border-white/20 select-none">
               HR
             </div>
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#075e54]"></span>
+            <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 border-2 border-[#075e54]"></span>
           </div>
 
-          {/* Title and online status */}
-          <div className="leading-tight">
-            <h2 className="text-sm font-semibold tracking-tight text-white flex items-center gap-1.5">
-              <span>HomeRun Assistant</span>
-              <span className="text-[10px] bg-emerald-700/80 text-emerald-100 px-1.5 py-0.2 rounded font-normal">
-                Verified
-              </span>
+          {/* Title and online status on single row */}
+          <div className="flex items-baseline gap-2 min-w-0 truncate">
+            <h2 className="text-[15px] font-bold tracking-tight text-white truncate">
+              HomeRun
             </h2>
-            <p className="text-[11px] text-emerald-200/90 font-normal">
+            <span className="text-[11.5px] text-[#25d366] font-medium shrink-0">
               {isLoading ? "typing..." : "online"}
-            </p>
+            </span>
           </div>
         </div>
 
-        {/* WhatsApp Call / Action Icons */}
-        <div className="flex items-center gap-2 text-white/90">
-          <button
-            type="button"
-            className="p-1.5 hover:bg-white/10 rounded-full transition-colors"
-            title="Video call"
-          >
-            <Video className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            className="p-1.5 hover:bg-white/10 rounded-full transition-colors"
-            title="Voice call"
-          >
-            <Phone className="w-4 h-4" />
-          </button>
-          {onResetChat && (
-            <button
-              type="button"
-              onClick={onResetChat}
-              className="p-1.5 hover:bg-white/10 rounded-full transition-colors"
-              title="Reset chat"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-          )}
+        {/* WhatsApp Right Menu - ONLY three-dot menu icon */}
+        <div className="flex items-center text-white/90 shrink-0">
           <button
             type="button"
             className="p-1.5 hover:bg-white/10 rounded-full transition-colors"
             title="More options"
           >
-            <MoreVertical className="w-4 h-4" />
+            <MoreVertical className="w-5 h-5" />
           </button>
         </div>
       </div>

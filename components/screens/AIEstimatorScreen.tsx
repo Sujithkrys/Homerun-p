@@ -4,7 +4,15 @@ import React, { useState, useRef, useEffect } from "react";
 import { Message, CartItem, Suggestion } from "@/lib/types";
 import MessageBubble from "../MessageBubble";
 import QuickActions from "../QuickActions";
-import { ArrowLeft, ShoppingCart, Send, Sparkles, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  ShoppingCart,
+  Send,
+  Sparkles,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 
 interface AIEstimatorScreenProps {
   messages: Message[];
@@ -32,6 +40,7 @@ export default function AIEstimatorScreen({
   initialInput = "",
 }: AIEstimatorScreenProps) {
   const [inputText, setInputText] = useState(initialInput);
+  const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isWeb = variant === "web";
 
@@ -52,6 +61,11 @@ export default function AIEstimatorScreen({
     if (!inputText.trim() || isLoading) return;
     onSendMessage(inputText.trim());
     setInputText("");
+  };
+
+  const handleSelectQuickPrompt = (prompt: string) => {
+    onSendMessage(prompt);
+    setIsQuickActionsOpen(false);
   };
 
   return (
@@ -111,7 +125,46 @@ export default function AIEstimatorScreen({
         </div>
       )}
 
-      {/* Messages Stream */}
+      {/* Fix 8: Collapsible "Try asking..." Bar at top of chat area */}
+      <div className="shrink-0 bg-white border-b border-[#eeeeee] z-10 select-none shadow-2xs">
+        <button
+          type="button"
+          onClick={() => setIsQuickActionsOpen((prev) => !prev)}
+          className="w-full h-10 px-3 flex items-center justify-between text-xs font-semibold text-[#333333] hover:bg-[#fafafa] transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-sm shrink-0">💡</span>
+            <span className="text-[#1a1a1a] font-bold truncate">Try asking...</span>
+            <span className="text-[10.5px] text-[#777777] font-normal hidden sm:inline truncate">
+              — Quick estimates for tiling, painting, wiring
+            </span>
+          </div>
+          <div className="flex items-center gap-1 text-[#666666] shrink-0">
+            <span className="text-[10px] font-medium">
+              {isQuickActionsOpen ? "Hide" : "Show"}
+            </span>
+            {isQuickActionsOpen ? (
+              <ChevronUp className="w-4 h-4 text-[#1a7a3a]" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-[#777777]" />
+            )}
+          </div>
+        </button>
+
+        {/* Collapsible Quick Action Pills Container */}
+        <div
+          className={`transition-all duration-200 ease-in-out overflow-hidden ${
+            isQuickActionsOpen ? "max-h-28 opacity-100 py-1.5 px-2 bg-[#f8faf9] border-t border-[#f0f0f0]" : "max-h-0 opacity-0 py-0"
+          }`}
+        >
+          <QuickActions
+            onSelectPrompt={handleSelectQuickPrompt}
+            disabled={isLoading}
+          />
+        </div>
+      </div>
+
+      {/* Messages Stream (Maximizes available height) */}
       <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8">
@@ -152,14 +205,6 @@ export default function AIEstimatorScreen({
         )}
 
         <div ref={messagesEndRef} />
-      </div>
-
-      {/* Quick Action Pills */}
-      <div className="shrink-0 bg-white/95 backdrop-blur-xs border-t border-[#eeeeee] px-2 py-1.5">
-        <QuickActions
-          onSelectPrompt={(p) => onSendMessage(p)}
-          disabled={isLoading}
-        />
       </div>
 
       {/* Chat Input Bar */}

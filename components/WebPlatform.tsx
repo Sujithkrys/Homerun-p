@@ -122,7 +122,7 @@ export default function WebPlatform({
   };
 
   return (
-    <div className="w-full min-h-[780px] bg-slate-100/70 flex flex-col rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden relative">
+    <div className="w-full h-full max-h-full bg-slate-100/70 flex flex-col rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden relative">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-60 bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-2xl border border-slate-700 animate-bounce">
@@ -180,7 +180,7 @@ export default function WebPlatform({
 
         {/* AI Estimator Screen: Desktop 2-Panel Layout (Chat Left ~62%, Enhanced Cart Right ~38%) */}
         {currentScreen === "ai-estimator" && (
-          <div className="w-full flex h-[760px] max-h-[82vh] overflow-hidden bg-white">
+          <div className="w-full flex h-full max-h-full overflow-hidden bg-white">
             {/* Left Panel: Chat Interface */}
             <div className="flex-1 flex flex-col h-full border-r border-slate-200/80 bg-slate-50/50">
               <div className="p-3.5 px-5 bg-white border-b border-slate-200/80 flex items-center justify-between shrink-0">
