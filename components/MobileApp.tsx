@@ -16,7 +16,7 @@ interface MobileAppProps {
   messages: Message[];
   cart: CartItem[];
   isLoading: boolean;
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string) => Promise<Message | null> | void;
   onUpdateQuantity: (productId: string, newQty: number) => void;
   onRemoveItem: (productId: string) => void;
   onClearCart: () => void;

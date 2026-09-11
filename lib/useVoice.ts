@@ -1,6 +1,10 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+
+interface UseVoiceOptions {
+  onSpeechResult?: (transcript: string) => void;
+}
 
 interface UseVoiceReturn {
   isRecording: boolean;
@@ -13,7 +17,7 @@ interface UseVoiceReturn {
   error: string | null;
 }
 
-export function useVoice(): UseVoiceReturn {
+export function useVoice(options?: UseVoiceOptions): UseVoiceReturn {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingSTT, setIsProcessingSTT] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -23,85 +27,97 @@ export function useVoice(): UseVoiceReturn {
   const audioChunksRef = useRef<Blob[]>([]);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const hasSpokenRef = useRef(false);
+  const isRecordingRef = useRef(false);
+  const optionsRef = useRef(options);
 
-  // Start recording from microphone
-  const startRecording = useCallback(async () => {
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
+
+  // Clean text helper for natural human speech synthesis
+  const cleanForSpeech = (rawText: string): string => {
+    return rawText
+      .replace(/[*_~`#]/g, "")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/₹\s*/g, "rupees ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 600); // 600 chars is ideal for rapid voice response
+  };
+
+  // Browser speech synthesis fallback (0ms latency, always works)
+  const speakWithBrowserSynthesis = (text: string, lang?: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     try {
-      setError(null);
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
 
-      // Request microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          sampleRate: 16000,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      });
+      // Select voice matching language if available
+      const voices = window.speechSynthesis.getVoices();
+      const targetLang = (lang || "en").toLowerCase();
+      const matchedVoice = voices.find((v) =>
+        v.lang.toLowerCase().startsWith(targetLang)
+      );
+      if (matchedVoice) utterance.voice = matchedVoice;
 
-      streamRef.current = stream;
-      audioChunksRef.current = [];
+      utterance.onstart = () => setIsPlayingAudio(true);
+      utterance.onend = () => setIsPlayingAudio(false);
+      utterance.onerror = () => setIsPlayingAudio(false);
 
-      // Use webm format (widely supported in browsers)
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : "audio/webm",
-      });
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(250); // Collect data every 250ms
-      setIsRecording(true);
-    } catch (err: any) {
-      console.error("[Voice] Mic error:", err.message);
-      if (err.name === "NotAllowedError") {
-        setError("Microphone access denied. Please allow microphone in your browser settings.");
-      } else if (err.name === "NotFoundError") {
-        setError("No microphone found. Please connect a microphone.");
-      } else {
-        setError("Could not access microphone. Please try again.");
-      }
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn("[Voice] Web Speech Synthesis error:", e);
+      setIsPlayingAudio(false);
     }
-  }, []);
+  };
 
-  // Stop recording and send to STT
-  const stopRecording = useCallback(async (): Promise<string | null> => {
+  // Internal stop handler
+  const executeStop = useCallback(async (): Promise<string | null> => {
     if (!mediaRecorderRef.current || mediaRecorderRef.current.state === "inactive") {
       return null;
+    }
+
+    // Cancel silence detection loops
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
     }
 
     return new Promise((resolve) => {
       const mediaRecorder = mediaRecorderRef.current!;
 
       mediaRecorder.onstop = async () => {
-        // Stop all tracks to release the microphone
+        // Stop all mic tracks
         streamRef.current?.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
+        isRecordingRef.current = false;
         setIsRecording(false);
         setIsProcessingSTT(true);
 
         try {
-          // Create audio blob from chunks
-          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: mediaRecorder.mimeType || "audio/webm",
+          });
           audioChunksRef.current = [];
 
-          // Don't send empty/tiny recordings
-          if (audioBlob.size < 1000) {
+          if (audioBlob.size < 250) {
             setIsProcessingSTT(false);
-            setError("Recording too short. Please hold the button and speak.");
             resolve(null);
             return;
           }
 
-          // Send to our STT API route
+          const ext = (mediaRecorder.mimeType || "").includes("mp4") ? "mp4" : "webm";
           const formData = new FormData();
-          formData.append("audio", audioBlob, "recording.webm");
+          formData.append("audio", audioBlob, `recording.${ext}`);
 
           const response = await fetch("/api/speech-to-text", {
             method: "POST",
@@ -114,10 +130,15 @@ export function useVoice(): UseVoiceReturn {
             setError(data.error);
             resolve(null);
           } else if (!data.transcript || data.transcript.trim() === "") {
-            setError("Could not understand. Please speak clearly and try again.");
+            setError("Could not understand your speech. Please speak clearly.");
             resolve(null);
           } else {
-            resolve(data.transcript.trim());
+            const cleanTranscript = data.transcript.trim();
+            resolve(cleanTranscript);
+            // Trigger auto-callback if provided
+            if (optionsRef.current?.onSpeechResult) {
+              optionsRef.current.onSpeechResult(cleanTranscript);
+            }
           }
         } catch (err: any) {
           console.error("[Voice] STT error:", err.message);
@@ -132,18 +153,138 @@ export function useVoice(): UseVoiceReturn {
     });
   }, []);
 
-  // Play bot response as audio using TTS
+  // Start recording from microphone
+  const startRecording = useCallback(async () => {
+    try {
+      setError(null);
+      hasSpokenRef.current = false;
+
+      // 1. Pre-warm and unlock audio element ON DIRECT USER GESTURE
+      // This is crucial: Chrome/Safari require .play() during direct click
+      if (!audioElementRef.current) {
+        audioElementRef.current = new Audio();
+      }
+      const audio = audioElementRef.current;
+      // Play 0.05s silent wav to establish autoplay permission
+      audio.src =
+        "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+      audio.play().catch(() => {});
+
+      // 2. Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+
+      streamRef.current = stream;
+      audioChunksRef.current = [];
+
+      // 3. Determine best supported audio MIME type across all browsers (including iOS Safari)
+      let mimeType = "";
+      if (typeof MediaRecorder !== "undefined") {
+        if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+          mimeType = "audio/webm;codecs=opus";
+        } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+          mimeType = "audio/webm";
+        } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          mimeType = "audio/mp4";
+        }
+      }
+
+      const mediaRecorder = new MediaRecorder(
+        stream,
+        mimeType ? { mimeType } : undefined
+      );
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start(200);
+      isRecordingRef.current = true;
+      setIsRecording(true);
+
+      // 4. Voice Activity Detection (VAD) / Silence Auto-Endpointing
+      try {
+        const AudioContextClass =
+          window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+          const audioCtx = new AudioContextClass();
+          audioContextRef.current = audioCtx;
+          const source = audioCtx.createMediaStreamSource(stream);
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 512;
+          source.connect(analyser);
+          analyserRef.current = analyser;
+
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+          let silenceStart: number | null = null;
+
+          const monitorAudio = () => {
+            if (!isRecordingRef.current) return;
+            analyser.getByteFrequencyData(dataArray);
+
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+              sum += dataArray[i];
+            }
+            const avgVolume = sum / dataArray.length;
+
+            // Volume threshold for human speech
+            if (avgVolume > 14) {
+              hasSpokenRef.current = true;
+              silenceStart = null;
+            } else if (hasSpokenRef.current) {
+              if (silenceStart === null) {
+                silenceStart = Date.now();
+              } else if (Date.now() - silenceStart > 1800) {
+                // User spoke and has now been silent for 1.8 seconds -> auto-respond!
+                executeStop();
+                return;
+              }
+            }
+
+            animFrameRef.current = requestAnimationFrame(monitorAudio);
+          };
+
+          animFrameRef.current = requestAnimationFrame(monitorAudio);
+        }
+      } catch (vadErr) {
+        console.warn("[Voice] VAD initialization skipped:", vadErr);
+      }
+    } catch (err: any) {
+      console.error("[Voice] Mic error:", err.message);
+      if (err.name === "NotAllowedError") {
+        setError("Microphone access denied. Please allow microphone in your browser settings.");
+      } else if (err.name === "NotFoundError") {
+        setError("No microphone found. Please connect a microphone.");
+      } else {
+        setError("Could not access microphone. Please try again.");
+      }
+    }
+  }, [executeStop]);
+
+  // Stop recording and send to STT
+  const stopRecording = useCallback(async (): Promise<string | null> => {
+    return executeStop();
+  }, [executeStop]);
+
+  // Play bot response as audio using Sarvam TTS (with browser synthesis fallback)
   const playBotAudio = useCallback(async (text: string, language?: string) => {
+    if (!text || !text.trim()) return;
+
     try {
       setError(null);
       setIsPlayingAudio(true);
 
-      // Strip markdown, emojis formatting for cleaner speech
-      const cleanText = text
-        .replace(/[*_~`#]/g, "")
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-        .replace(/₹\s*/g, "rupees ")
-        .slice(0, 2500);
+      const cleanText = cleanForSpeech(text);
 
       const response = await fetch("/api/text-to-speech", {
         method: "POST",
@@ -156,13 +297,13 @@ export function useVoice(): UseVoiceReturn {
 
       const data = await response.json();
 
-      if (data.error) {
-        console.warn("[Voice] TTS error:", data.error);
-        setIsPlayingAudio(false);
+      if (data.error || !data.audio) {
+        console.warn("[Voice] TTS API error, using browser synthesis fallback:", data.error);
+        speakWithBrowserSynthesis(cleanText, language);
         return;
       }
 
-      // Convert base64 to audio and play
+      // Convert base64 audio to Blob URL
       const audioBytes = atob(data.audio);
       const audioArray = new Uint8Array(audioBytes.length);
       for (let i = 0; i < audioBytes.length; i++) {
@@ -172,41 +313,43 @@ export function useVoice(): UseVoiceReturn {
       const audioBlob = new Blob([audioArray], { type: "audio/mp3" });
       const audioUrl = URL.createObjectURL(audioBlob);
 
-      // Stop any currently playing audio
-      if (audioElementRef.current) {
-        audioElementRef.current.pause();
-        audioElementRef.current = null;
+      // Reuse the pre-warmed, unlocked audio element
+      let audio = audioElementRef.current;
+      if (!audio) {
+        audio = new Audio();
+        audioElementRef.current = audio;
       }
 
-      const audio = new Audio(audioUrl);
-      audioElementRef.current = audio;
+      audio.src = audioUrl;
 
       audio.onended = () => {
         setIsPlayingAudio(false);
         URL.revokeObjectURL(audioUrl);
-        audioElementRef.current = null;
       };
 
-      audio.onerror = () => {
-        setIsPlayingAudio(false);
+      audio.onerror = (e) => {
+        console.warn("[Voice] Audio playback failed, using browser synthesis fallback:", e);
         URL.revokeObjectURL(audioUrl);
-        audioElementRef.current = null;
+        speakWithBrowserSynthesis(cleanText, language);
       };
 
       await audio.play();
     } catch (err: any) {
-      console.error("[Voice] TTS playback error:", err.message);
-      setIsPlayingAudio(false);
+      console.warn("[Voice] Playback error, using browser synthesis fallback:", err.message);
+      speakWithBrowserSynthesis(cleanForSpeech(text), language);
     }
   }, []);
 
-  // Stop audio playback
+  // Stop audio playback / interrupt agent
   const stopAudio = useCallback(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
     if (audioElementRef.current) {
       audioElementRef.current.pause();
-      audioElementRef.current = null;
-      setIsPlayingAudio(false);
+      audioElementRef.current.currentTime = 0;
     }
+    setIsPlayingAudio(false);
   }, []);
 
   return {

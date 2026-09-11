@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Message, CartItem, Suggestion } from "@/lib/types";
 import MessageBubble from "../MessageBubble";
 import QuickActions from "../QuickActions";
@@ -21,7 +21,7 @@ interface AIEstimatorScreenProps {
   messages: Message[];
   cart: CartItem[];
   isLoading: boolean;
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string) => Promise<Message | null> | void;
   onAddSuggestion: (suggestion: Suggestion) => void;
   onAddToCart?: (item: CartItem) => void;
   onAddAllToCart?: (items: CartItem[]) => void;
@@ -49,17 +49,43 @@ export default function AIEstimatorScreen({
   const [inputText, setInputText] = useState(initialInput);
   const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
+  const [isVoiceThinking, setIsVoiceThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isWeb = variant === "web";
+  const isProcessingVoiceRef = useRef(false);
 
-  const voice = useVoice();
-  const [autoSpeakVoiceResponse, setAutoSpeakVoiceResponse] = useState(false);
+  // Directly process user speech: sends message to chat and immediately speaks response out loud
+  const handleProcessSpeech = useCallback(
+    async (transcript: string) => {
+      if (!transcript || !transcript.trim() || isProcessingVoiceRef.current) return;
+      isProcessingVoiceRef.current = true;
+      setIsVoiceThinking(true);
 
-  const handleVoiceResult = async () => {
+      try {
+        const res = await onSendMessage(transcript.trim());
+        if (res && res.content) {
+          setPlayingMessageId(res.id);
+          await voice.playBotAudio(res.content);
+        }
+      } catch (err) {
+        console.error("Voice processing error:", err);
+      } finally {
+        isProcessingVoiceRef.current = false;
+        setIsVoiceThinking(false);
+      }
+    },
+    [onSendMessage]
+  );
+
+  const voice = useVoice({
+    onSpeechResult: handleProcessSpeech,
+  });
+
+  // Manual tap on mic button to finish speaking immediately
+  const handleManualStopRecording = async () => {
     const transcript = await voice.stopRecording();
-    if (transcript) {
-      setAutoSpeakVoiceResponse(true);
-      onSendMessage(transcript);
+    if (transcript && transcript.trim()) {
+      handleProcessSpeech(transcript.trim());
     }
   };
 
@@ -74,18 +100,6 @@ export default function AIEstimatorScreen({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
-
-  // When voice agent was used, automatically speak the bot's response out loud
-  useEffect(() => {
-    if (autoSpeakVoiceResponse && messages.length > 0 && !isLoading) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg.role === "assistant") {
-        setAutoSpeakVoiceResponse(false);
-        setPlayingMessageId(lastMsg.id);
-        voice.playBotAudio(lastMsg.content);
-      }
-    }
-  }, [messages, isLoading, autoSpeakVoiceResponse]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -254,31 +268,50 @@ export default function AIEstimatorScreen({
         {/* Voice Agent Language Bar */}
         <div className="flex items-center justify-between px-1 pb-1.5 text-[10.5px]">
           <span className="flex items-center gap-1.5 font-bold text-[#1a7a3a]">
-            <span className={`w-2 h-2 rounded-full ${voice.isRecording ? "bg-red-500 animate-ping" : "bg-[#1a7a3a]"}`} />
             {voice.isRecording ? (
-              <span className="text-red-600 font-extrabold animate-pulse">
-                Listening... Speak now & tap mic when done
+              <span className="text-red-600 font-extrabold animate-pulse flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
+                🎙️ Voice Agent listening... Speak naturally (pausing auto-sends or tap mic)
               </span>
-            ) : voice.isProcessingSTT ? (
-              <span className="text-amber-700 font-bold">
-                Transcribing speech with Sarvam AI...
+            ) : voice.isProcessingSTT || isVoiceThinking ? (
+              <span className="text-emerald-700 font-bold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-bounce" />
+                ⚡ HomeRun Voice Agent is answering...
+              </span>
+            ) : voice.isPlayingAudio ? (
+              <span className="text-[#1a7a3a] font-extrabold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
+                🔊 HomeRun Voice Agent is talking to you... (Tap mic to reply)
               </span>
             ) : (
-              <span>
-                🎙️ Voice Agent: Tap mic to speak in Kannada, Hindi, Telugu, English
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#1a7a3a]" />
+                🎙️ Voice Agent: Tap mic to talk in Kannada, Hindi, Telugu, English
               </span>
             )}
           </span>
+
+          {voice.isPlayingAudio && (
+            <button
+              type="button"
+              onClick={voice.stopAudio}
+              className="text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded-md border border-red-200 cursor-pointer transition-colors"
+            >
+              Stop Voice
+            </button>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           {/* Voice Mic Button */}
           <VoiceButton
             isRecording={voice.isRecording}
-            isProcessingSTT={voice.isProcessingSTT}
+            isProcessingSTT={voice.isProcessingSTT || isVoiceThinking}
+            isPlayingAudio={voice.isPlayingAudio}
             onStartRecording={voice.startRecording}
-            onStopRecording={handleVoiceResult}
-            disabled={isLoading}
+            onStopRecording={handleManualStopRecording}
+            onStopAudio={voice.stopAudio}
+            disabled={isLoading && !isVoiceThinking}
           />
 
           <input
@@ -287,7 +320,11 @@ export default function AIEstimatorScreen({
             onChange={(e) => setInputText(e.target.value)}
             placeholder={
               voice.isRecording
-                ? "Listening... Speak in Hindi, Kannada, Telugu, English..."
+                ? "Listening... Speak in Kannada, Hindi, Telugu, English..."
+                : voice.isPlayingAudio
+                ? "Agent is talking... Tap mic to interrupt & reply"
+                : isVoiceThinking
+                ? "Agent is answering with voice..."
                 : "Type or tap mic to speak..."
             }
             disabled={isLoading || voice.isRecording}

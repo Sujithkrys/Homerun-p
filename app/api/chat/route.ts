@@ -51,8 +51,8 @@ async function callSarvam(message: string, history: any[]) {
       model: model,
       messages: messages,
       response_format: { type: "json_object" },
-      temperature: 0.7,
-      max_tokens: 4096,
+      temperature: 0.6,
+      max_tokens: 1024,
     }),
   });
 

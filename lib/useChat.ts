@@ -77,8 +77,8 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
   };
 
   // Send message and trigger API
-  const handleSendMessage = async (userText: string) => {
-    if (!userText.trim() || isLoading) return;
+  const handleSendMessage = async (userText: string): Promise<Message | null> => {
+    if (!userText.trim() || isLoading) return null;
 
     const currentTime = new Date().toLocaleTimeString([], {
       hour: "2-digit",
@@ -104,20 +104,17 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
 
       if (existingItem) {
         setCart((prev) => prev.filter((it) => it.product_id !== existingItem.product_id));
-        setMessages((prev) => [
-          ...prev,
-          userMessage,
-          {
-            id: `asst-${Date.now()}`,
-            role: "assistant",
-            content:
-              mode === "whatsapp"
-                ? `Removed *${existingItem.name}* from your cart.`
-                : `Removed **${existingItem.name}** from your cart.`,
-            timestamp: currentTime,
-          },
-        ]);
-        return;
+        const removeReply: Message = {
+          id: `asst-${Date.now()}`,
+          role: "assistant",
+          content:
+            mode === "whatsapp"
+              ? `Removed *${existingItem.name}* from your cart.`
+              : `Removed **${existingItem.name}** from your cart.`,
+          timestamp: currentTime,
+        };
+        setMessages((prev) => [...prev, userMessage, removeReply]);
+        return removeReply;
       }
     }
 
@@ -169,6 +166,7 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+      return assistantMessage;
     } catch (err) {
       console.error("Chat fetch error:", err);
       const errorMessage: Message = {
@@ -179,6 +177,7 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
         timestamp: currentTime,
       };
       setMessages((prev) => [...prev, errorMessage]);
+      return errorMessage;
     } finally {
       setIsLoading(false);
     }

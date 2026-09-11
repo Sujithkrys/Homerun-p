@@ -3,21 +3,30 @@
 interface VoiceButtonProps {
   isRecording: boolean;
   isProcessingSTT: boolean;
+  isPlayingAudio?: boolean;
   onStartRecording: () => void;
   onStopRecording: () => void;
+  onStopAudio?: () => void;
   disabled?: boolean;
 }
 
 export function VoiceButton({
   isRecording,
   isProcessingSTT,
+  isPlayingAudio = false,
   onStartRecording,
   onStopRecording,
+  onStopAudio,
   disabled,
 }: VoiceButtonProps) {
-  // Toggle recording on tap
+  // Toggle recording or interrupt speaking on tap
   const handleClick = () => {
     if (disabled || isProcessingSTT) return;
+    if (isPlayingAudio) {
+      onStopAudio?.();
+      onStartRecording();
+      return;
+    }
     if (isRecording) {
       onStopRecording();
     } else {
@@ -35,16 +44,20 @@ export function VoiceButton({
           ? "bg-red-500 text-white animate-pulse shadow-md shadow-red-500/40 ring-2 ring-red-300 scale-105"
           : isProcessingSTT
           ? "bg-amber-100 text-amber-700 cursor-wait border border-amber-300"
+          : isPlayingAudio
+          ? "bg-[#1a7a3a] text-white animate-pulse shadow-md shadow-emerald-500/40 ring-2 ring-emerald-300 scale-105"
           : "bg-emerald-50 text-[#1a7a3a] border border-emerald-300 hover:bg-[#1a7a3a] hover:text-white hover:border-[#1a7a3a] shadow-xs active:scale-95"
       } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
       title={
         isRecording
           ? "Tap to stop recording"
           : isProcessingSTT
-          ? "Transcribing speech..."
+          ? "Transcribing speech with Sarvam AI..."
+          : isPlayingAudio
+          ? "Voice Agent is speaking (tap to interrupt and speak)"
           : "Voice Assistant — Speak in Kannada, Hindi, Telugu, English"
       }
-      aria-label={isRecording ? "Stop recording" : "Start voice recording"}
+      aria-label={isRecording ? "Stop recording" : isPlayingAudio ? "Interrupt voice" : "Start voice recording"}
     >
       {isProcessingSTT ? (
         /* Spinner icon */
@@ -68,6 +81,13 @@ export function VoiceButton({
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
           <rect x="6" y="6" width="12" height="12" rx="2" />
         </svg>
+      ) : isPlayingAudio ? (
+        /* Animated speaking sound waves */
+        <div className="flex items-center gap-0.5 h-4 select-none pointer-events-none">
+          <span className="w-1 bg-white h-2.5 rounded-full animate-bounce [animation-delay:0ms]" />
+          <span className="w-1 bg-white h-4 rounded-full animate-bounce [animation-delay:150ms]" />
+          <span className="w-1 bg-white h-3 rounded-full animate-bounce [animation-delay:300ms]" />
+        </div>
       ) : (
         /* Microphone icon */
         <svg

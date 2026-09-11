@@ -40,10 +40,22 @@ export async function POST(req: Request) {
       en: "en-IN",
     };
 
-    const ttsLanguage = languageMap[language || "en"] || "en-IN";
+    let ttsLanguage = languageMap[language || ""] || "";
+    if (!ttsLanguage || ttsLanguage === "en-IN") {
+      // Auto-detect native script from text
+      if (/[\u0C80-\u0CFF]/.test(text)) ttsLanguage = "kn-IN"; // Kannada
+      else if (/[\u0900-\u097F]/.test(text)) ttsLanguage = "hi-IN"; // Hindi / Marathi
+      else if (/[\u0C00-\u0C7F]/.test(text)) ttsLanguage = "te-IN"; // Telugu
+      else if (/[\u0B80-\u0BFF]/.test(text)) ttsLanguage = "ta-IN"; // Tamil
+      else if (/[\u0D00-\u0D7F]/.test(text)) ttsLanguage = "ml-IN"; // Malayalam
+      else if (/[\u0980-\u09FF]/.test(text)) ttsLanguage = "bn-IN"; // Bengali
+      else if (/[\u0A80-\u0AFF]/.test(text)) ttsLanguage = "gu-IN"; // Gujarati
+      else if (/[\u0A00-\u0A7F]/.test(text)) ttsLanguage = "pa-IN"; // Punjabi
+      else ttsLanguage = "en-IN";
+    }
 
-    // Truncate text to 2500 chars (Sarvam TTS limit for bulbul:v3)
-    const truncatedText = text.slice(0, 2500);
+    // Truncate text to 1000 chars for rapid voice synthesis
+    const truncatedText = text.slice(0, 1000);
 
     const response = await fetch("https://api.sarvam.ai/text-to-speech", {
       method: "POST",
@@ -55,14 +67,14 @@ export async function POST(req: Request) {
         text: truncatedText,
         language_code: ttsLanguage,
         model: "bulbul:v3",
-        // Speaker selection — pick a clear voice
+        // Speaker selection — pick a clear natural voice
         speaker: "priya",
         // Audio config — use mp3 for smaller size and browser compat
         output_audio_codec: "mp3",
         // Speech sample rate
         speech_sample_rate: 22050,
-        // Moderate speed (0.5 to 2.0)
-        pace: 1.0,
+        // Fluid natural conversational speed
+        pace: 1.05,
         // Normalize English words and numbers in Indian language text
         enable_preprocessing: true,
       }),
