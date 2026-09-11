@@ -64,15 +64,12 @@ export default function HeroCard({
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${activeIndex * 100}%)` }}
         >
-          {/* SLIDE 1: AI Estimator Hero Card (Matching Promo Banner Design) */}
+          {/* SLIDE 1: AI Estimator Hero Card (Clean solid white, no gradient at order now) */}
           <div className="w-full shrink-0">
             <div
               onClick={() => onTryEstimator()}
-              className="w-full rounded-2xl bg-linear-to-r from-[#ffffff] via-[#f4faf7] to-[#eef7f3] border border-[#d3ece0] p-3.5 shadow-2xs cursor-pointer hover:shadow-xs transition-shadow relative overflow-hidden flex items-center justify-between"
+              className="w-full rounded-2xl bg-white border border-[#e5e5e5] p-3.5 shadow-2xs cursor-pointer hover:shadow-xs transition-shadow relative overflow-hidden flex items-center justify-between"
             >
-              {/* Decorative green curve in background */}
-              <div className="absolute -bottom-10 -left-10 w-44 h-44 rounded-full bg-[#1a7a3a]/10 pointer-events-none" />
-
               {/* Left Content */}
               <div className="relative z-10 flex flex-col items-start pr-2">
                 <h3 className="font-black text-base sm:text-lg text-[#1a1a1a] tracking-tight leading-tight font-display">
@@ -124,15 +121,12 @@ export default function HeroCard({
             </div>
           </div>
 
-          {/* SLIDE 2: Original Plywood & MDF Promo Card */}
+          {/* SLIDE 2: Original Plywood & MDF Promo Card (Clean solid white, no gradient at order now) */}
           <div className="w-full shrink-0">
             <div
               onClick={() => (onNavigateToCategories ? onNavigateToCategories() : onTryEstimator("Plywood and MDF"))}
               className="w-full rounded-2xl bg-white border border-[#e5e5e5] p-3.5 shadow-2xs cursor-pointer hover:shadow-xs transition-shadow relative overflow-hidden flex items-center justify-between"
             >
-              {/* Decorative green curve in background */}
-              <div className="absolute -bottom-10 -left-10 w-44 h-44 rounded-full bg-[#1b5e20]/10 pointer-events-none" />
-
               {/* Left Content */}
               <div className="relative z-10 flex flex-col items-start pr-2">
                 <h3 className="font-black text-base sm:text-lg text-[#1a1a1a] tracking-tight leading-tight font-display">
@@ -179,30 +173,27 @@ export default function HeroCard({
             </div>
           </div>
 
-          {/* SLIDE 3: Wires & Cables Price Drop Card */}
+          {/* SLIDE 3: Wires & Cables Price Drop Card (Clean solid white, no gradient at order now) */}
           <div className="w-full shrink-0">
             <div
               onClick={() => onTryEstimator("Electrical wiring estimate for 2BHK")}
-              className="w-full rounded-2xl bg-linear-to-r from-[#ffffff] via-[#f0f6ff] to-[#e6efff] border border-[#bfdbfe] p-3.5 shadow-2xs cursor-pointer hover:shadow-xs transition-shadow relative overflow-hidden flex items-center justify-between"
+              className="w-full rounded-2xl bg-white border border-[#e5e5e5] p-3.5 shadow-2xs cursor-pointer hover:shadow-xs transition-shadow relative overflow-hidden flex items-center justify-between"
             >
-              {/* Decorative blue curve in background */}
-              <div className="absolute -bottom-10 -left-10 w-44 h-44 rounded-full bg-[#0047cc]/10 pointer-events-none" />
-
               {/* Left Content */}
               <div className="relative z-10 flex flex-col items-start pr-2">
                 <h3 className="font-black text-base sm:text-lg text-[#1a1a1a] tracking-tight leading-tight font-display">
                   Wires &amp; Cables.<br />Price Drop.
                 </h3>
 
-                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#0047cc] text-white text-[10px] font-black mt-1.5 shadow-2xs">
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#eab308] text-[#1a1a1a] text-[10px] font-black mt-1.5 shadow-2xs">
                   <span>100% Genuine FR Coils</span>
                 </div>
 
                 <div className="flex items-center gap-2 mt-2.5">
-                  <span className="px-2.5 py-1 rounded-md bg-[#0047cc] text-white text-[10.5px] font-black flex items-center gap-0.5 shadow-2xs hover:bg-[#0039a6]">
+                  <span className="px-2.5 py-1 rounded-md bg-[#1a7a3a] text-white text-[10.5px] font-black flex items-center gap-0.5 shadow-2xs hover:bg-[#145a2b]">
                     CALCULATE WIRING <ChevronRight className="w-3 h-3" />
                   </span>
-                  <span className="text-[9.5px] font-bold text-[#0047cc] flex items-center gap-0.5">
+                  <span className="text-[9.5px] font-bold text-[#1a7a3a] flex items-center gap-0.5">
                     <Zap className="w-2.5 h-2.5 text-[#eab308]" /> DIRECT MILL SUPPLY
                   </span>
                 </div>
