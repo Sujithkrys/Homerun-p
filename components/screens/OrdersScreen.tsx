@@ -32,7 +32,7 @@ export default function OrdersScreen({
   };
 
   return (
-    <div className="w-full h-full flex-1 flex flex-col min-h-0 bg-[#fbfbfb] overflow-hidden relative select-none">
+    <div className="w-full h-full flex-1 flex flex-col min-h-0 bg-[#fbfbfb] overflow-hidden relative">
       {/* Toast */}
       {toastMessage && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 bg-[#1a1a1a] text-white text-xs font-semibold px-4 py-2 rounded-full shadow-xl border border-slate-700 animate-bounce">

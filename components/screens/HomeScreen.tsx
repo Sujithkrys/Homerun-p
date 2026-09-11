@@ -75,7 +75,7 @@ export default function HomeScreen({
   };
 
   return (
-    <div className="w-full h-full flex-1 flex flex-col min-h-0 bg-[#fbfbfb] overflow-hidden select-none">
+    <div className="w-full h-full flex-1 flex flex-col min-h-0 bg-[#fbfbfb] overflow-hidden">
       {/* Real HomeRun Header on Mobile */}
       {!isWeb && (
         <HomeRunHeader

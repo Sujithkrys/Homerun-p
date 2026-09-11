@@ -80,7 +80,7 @@ export default function MobileApp({
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-white overflow-hidden relative select-none">
+    <div className="w-full h-full flex flex-col bg-white overflow-hidden relative">
       {/* Screen Content */}
       <div className="flex-1 w-full h-full min-h-0 overflow-hidden flex flex-col">
         {currentScreen === "home" && (

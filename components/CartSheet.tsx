@@ -105,7 +105,7 @@ export default function CartSheet({
         isMobile
           ? "absolute inset-0 z-50 flex flex-col justify-end"
           : "fixed inset-0 z-50 flex justify-end"
-      } select-none overflow-hidden`}
+      } overflow-hidden`}
     >
       {/* Backdrop */}
       <div
