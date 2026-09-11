@@ -6,6 +6,7 @@ import { CheckCheck, ShoppingBag, CreditCard, PlusCircle, Calculator } from "luc
 import ProjectEstimateCard from "./ProjectEstimateCard";
 import SuggestionChips from "./SuggestionChips";
 import DownloadEstimateButton from "./DownloadEstimateButton";
+import WhatsAppText from "@/lib/formatWhatsApp";
 
 interface MessageBubbleProps {
   message: Message;
@@ -107,7 +108,11 @@ export default function MessageBubble({
         >
           {/* Main Message Content */}
           <div className="text-[13.5px] leading-relaxed break-words">
-            {renderFormattedText(message.content)}
+            {isUser ? (
+              <div className="whitespace-pre-wrap">{message.content}</div>
+            ) : (
+              <WhatsAppText text={message.content} />
+            )}
           </div>
 
           {/* 1. Multi-Room Project Estimate (WhatsApp) */}
@@ -129,32 +134,36 @@ export default function MessageBubble({
 
           {/* In-Bubble WhatsApp Cart Card (When Cart Items are Present) */}
           {!isUser && hasCartItems && (
-            <div className="mt-2.5 pt-2 border-t border-slate-200/80 bg-emerald-50/50 -mx-1.5 px-2 py-2 rounded-md">
-              <div className="font-bold text-emerald-900 flex items-center gap-1 text-[13px]">
+            <div className="mt-2.5 pt-2 border-t border-slate-200/80 bg-emerald-50/60 -mx-1.5 px-2.5 py-2 rounded-md font-sans text-xs space-y-1.5">
+              <div className="font-bold text-emerald-950 flex items-center gap-1.5 text-[13px]">
                 <span>🛒</span>
-                <span>Your Cart</span>
+                <strong>Your Cart</strong>
               </div>
-              <div className="mt-1 space-y-1 text-xs text-slate-700 font-mono">
+              <div className="mt-1 space-y-1 text-xs text-slate-800">
                 {itemsToDisplay.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center">
-                    <span className="truncate max-w-[200px]">
+                  <div key={idx} className="flex justify-between items-start gap-1">
+                    <span className="flex-1">
                       {idx + 1}. {item.name} × {item.quantity} {item.unit}
                     </span>
-                    <span className="font-semibold text-slate-900 ml-2">
-                      ₹{item.total.toLocaleString("en-IN")}
+                    <span className="font-semibold text-slate-900 shrink-0">
+                      — ₹{item.total.toLocaleString("en-IN")}
                     </span>
                   </div>
                 ))}
               </div>
-              <div className="mt-2 pt-1.5 border-t border-dashed border-emerald-300 flex justify-between items-center text-xs font-bold text-slate-900">
-                <span>💰 Total</span>
-                <span className="text-emerald-800">
-                  ₹{cartTotal.toLocaleString("en-IN")}
+              <div className="mt-2 pt-1.5 border-t border-dashed border-emerald-300/80 flex justify-between items-center text-xs font-bold text-slate-900">
+                <span className="flex items-center gap-1">
+                  <span>💰</span>
+                  <strong>Total:</strong>
                 </span>
+                <strong className="text-emerald-800 text-[13px]">
+                  ₹{cartTotal.toLocaleString("en-IN")}
+                </strong>
               </div>
-              <div className="mt-1 text-[11px] text-emerald-700 flex items-center justify-between">
+              <div className="mt-1 text-[11px] text-emerald-700 flex items-center justify-between font-medium">
                 <span>🚚 Free delivery</span>
-                <span>⚡ 60 min Bangalore dispatch</span>
+                <span>|</span>
+                <span>⚡ 60 min</span>
               </div>
 
               {/* 3. Download Estimate Button (WhatsApp) */}
