@@ -19,7 +19,7 @@ export function useSarvamVoice() {
         workspace_id: process.env.NEXT_PUBLIC_SARVAM_WORKSPACE_ID || "",
         app_id: process.env.NEXT_PUBLIC_SARVAM_AGENT_ID || "",
         interaction_type: InteractionType.CALL,
-        user_identifier_type: "browser",
+        user_identifier_type: "custom",
         user_identifier: "web_user",
         input_sample_rate: 16000,
         output_sample_rate: 16000
