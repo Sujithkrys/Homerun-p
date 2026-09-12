@@ -6,13 +6,15 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     console.log("[add-to-cart] Raw request body:", JSON.stringify(body));
-    const { product_name, brand, quantity, unit_price, session_id } = body;
+    const { product_name, brand, session_id } = body;
+    const quantity = Number(body.quantity);
+    const unit_price = Number(body.unit_price);
 
     if (!session_id) {
       return NextResponse.json({ success: false, error: "Missing session_id" }, { status: 400 });
     }
 
-    if (!product_name || typeof quantity !== "number" || typeof unit_price !== "number") {
+    if (!product_name || isNaN(quantity) || isNaN(unit_price)) {
       return NextResponse.json({ success: false, error: "Invalid product data" }, { status: 400 });
     }
 
