@@ -24,7 +24,7 @@ export function useSarvamVoice() {
     const sessionId = getOrCreateSessionId();
     console.log("[useSarvamVoice] Session ID being used:", sessionId);
 
-    const configObject = {
+    const configObject: any = {
       org_id: process.env.NEXT_PUBLIC_SARVAM_ORG_ID || "",
       workspace_id: process.env.NEXT_PUBLIC_SARVAM_WORKSPACE_ID || "",
       app_id: process.env.NEXT_PUBLIC_SARVAM_AGENT_ID || "",
@@ -32,10 +32,14 @@ export function useSarvamVoice() {
       user_identifier_type: "custom",
       user_identifier: sessionId,
       input_sample_rate: 16000 as const,
-      output_sample_rate: 16000 as const
+      output_sample_rate: 16000 as const,
+      agent_variables: {
+        user_identifier: sessionId,
+      }
     };
 
     console.log("[useSarvamVoice] Full session config:", JSON.stringify(configObject));
+    console.log("[useSarvamVoice] agent_variables being sent:", JSON.stringify(configObject.agent_variables));
 
     const session = new ConversationAgent({
       apiKey: process.env.NEXT_PUBLIC_SARVAM_EMBED_KEY || "",
