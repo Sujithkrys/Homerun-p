@@ -1,8 +1,18 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ConversationAgent, AgentState, InteractionType, BrowserAudioInterface } from "sarvam-conv-ai-sdk";
-
 export type CallState = "idle" | "connecting" | "listening" | "speaking";
+
+// Helper to get or create a persistent session ID
+export function getOrCreateSessionId() {
+  if (typeof window === "undefined") return "server-session";
+  let sessionId = localStorage.getItem("homerun_session_id");
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem("homerun_session_id", sessionId);
+  }
+  return sessionId;
+}
 
 export function useSarvamVoice() {
   const [callState, setCallState] = useState<CallState>("idle");
@@ -10,6 +20,8 @@ export function useSarvamVoice() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    const sessionId = getOrCreateSessionId();
 
     const session = new ConversationAgent({
       apiKey: process.env.NEXT_PUBLIC_SARVAM_EMBED_KEY || "",
@@ -20,7 +32,7 @@ export function useSarvamVoice() {
         app_id: process.env.NEXT_PUBLIC_SARVAM_AGENT_ID || "",
         interaction_type: InteractionType.CALL,
         user_identifier_type: "custom",
-        user_identifier: "web_user",
+        user_identifier: sessionId,
         input_sample_rate: 16000,
         output_sample_rate: 16000
       },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Message,
   CartItem,
@@ -12,7 +12,7 @@ import {
 export function mergeItemIntoCart(cart: CartItem[], newItem: CartItem): CartItem[] {
   const updated = [...cart];
   const existingIndex = updated.findIndex(
-    (item) => item.product_id === newItem.product_id
+    (item) => item.product_id === newItem.product_id || item.name === newItem.name
   );
   if (existingIndex > -1) {
     const current = updated[existingIndex];
@@ -23,7 +23,10 @@ export function mergeItemIntoCart(cart: CartItem[], newItem: CartItem): CartItem
       total: combinedQty * current.unit_price,
     };
   } else {
-    updated.push(newItem);
+    updated.push({
+      ...newItem,
+      product_id: newItem.product_id || `voice-${Date.now()}-${Math.random()}`
+    });
   }
   return updated;
 }
@@ -56,6 +59,69 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
   const [messages, setMessages] = useState<Message[]>([getInitialGreeting(mode)]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const lastVoiceCartCountRef = useRef(0);
+
+  // Poll voice cart from Vercel KV
+  useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
+    const pollVoiceCart = async () => {
+      try {
+        const sessionId = typeof window !== "undefined" ? localStorage.getItem("homerun_session_id") : null;
+        if (sessionId) {
+          const res = await fetch("/api/voice/get-cart", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: sessionId }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.cart) {
+              const currentVoiceCount = data.cart.length;
+              const newItemsCount = currentVoiceCount - lastVoiceCartCountRef.current;
+              
+              if (newItemsCount > 0) {
+                const newItems = data.cart.slice(lastVoiceCartCountRef.current);
+                setCart((prevCart) => {
+                  let updated = [...prevCart];
+                  newItems.forEach((item: any) => {
+                    // Normalize the item since Voice API sends product_name, text UI expects name
+                    const normalizedItem: CartItem = {
+                      product_id: `voice-${Date.now()}-${Math.random()}`,
+                      name: item.product_name || item.name || "Unknown Item",
+                      quantity: item.quantity || 1,
+                      unit: item.unit || "unit",
+                      unit_price: item.unit_price || 0,
+                      total: (item.quantity || 1) * (item.unit_price || 0),
+                      reason: item.reason || "Added via Voice Assistant",
+                    };
+                    updated = mergeItemIntoCart(updated, normalizedItem);
+                  });
+                  return updated;
+                });
+                lastVoiceCartCountRef.current = currentVoiceCount;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to poll voice cart:", err);
+      }
+
+      if (isMounted) {
+        timeoutId = setTimeout(pollVoiceCart, 3000);
+      }
+    };
+
+    pollVoiceCart();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, []);
 
   // Platform Cart Enhancements State
   const [unloadingService, setUnloadingService] = useState(false);
