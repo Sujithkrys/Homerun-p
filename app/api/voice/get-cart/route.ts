@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { redis } from "@/lib/redis";
 import { CartItem } from "@/lib/types";
 
 export async function POST(req: Request) {
@@ -14,7 +14,8 @@ export async function POST(req: Request) {
     const key = `cart:${session_id}`;
     
     // Read the existing cart array, default to empty array
-    const cart: CartItem[] = (await kv.get<CartItem[]>(key)) || [];
+    const rawCart = await redis.get(key);
+    const cart: CartItem[] = rawCart ? JSON.parse(rawCart) : [];
 
     // Compute total cost
     const total = cart.reduce((sum, item) => sum + (item.total || 0), 0);

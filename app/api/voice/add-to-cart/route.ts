@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { redis } from "@/lib/redis";
 import { CartItem } from "@/lib/types";
 
 export async function POST(req: Request) {
@@ -18,7 +18,8 @@ export async function POST(req: Request) {
     const key = `cart:${session_id}`;
     
     // Read the existing cart array, default to empty array
-    let cart: CartItem[] = (await kv.get<CartItem[]>(key)) || [];
+    const rawCart = await redis.get(key);
+    let cart: CartItem[] = rawCart ? JSON.parse(rawCart) : [];
 
     // Append the new item
     const newItem: CartItem = {
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
     cart.push(newItem);
 
     // Write back to KV
-    await kv.set(key, cart);
+    await redis.set(key, JSON.stringify(cart));
 
     return NextResponse.json({ success: true, cart });
   } catch (error: any) {
