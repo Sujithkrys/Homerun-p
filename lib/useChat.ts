@@ -70,6 +70,7 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
       try {
         const sessionId = typeof window !== "undefined" ? localStorage.getItem("homerun_session_id") : null;
         if (sessionId) {
+          console.log("[CartPoll] Using session ID:", sessionId);
           const res = await fetch("/api/voice/get-cart", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

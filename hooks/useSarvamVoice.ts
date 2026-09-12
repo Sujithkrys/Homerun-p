@@ -22,6 +22,7 @@ export function useSarvamVoice() {
     if (typeof window === "undefined") return;
 
     const sessionId = getOrCreateSessionId();
+    console.log("[useSarvamVoice] Session ID being used:", sessionId);
 
     const session = new ConversationAgent({
       apiKey: process.env.NEXT_PUBLIC_SARVAM_EMBED_KEY || "",
@@ -33,6 +34,8 @@ export function useSarvamVoice() {
         interaction_type: InteractionType.CALL,
         user_identifier_type: "custom",
         user_identifier: sessionId,
+        // @ts-ignore - explicitly requested by user to ensure it's passed despite type definition
+        userId: sessionId,
         input_sample_rate: 16000,
         output_sample_rate: 16000
       },
