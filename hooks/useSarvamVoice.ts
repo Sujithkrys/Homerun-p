@@ -1,38 +1,38 @@
 "use client";
-
 import { useState, useEffect, useRef, useCallback } from "react";
+import { ConversationAgent, AgentState, InteractionType } from "sarvam-conv-ai-sdk";
 
 export type CallState = "idle" | "connecting" | "listening" | "speaking";
 
 export function useSarvamVoice() {
   const [callState, setCallState] = useState<CallState>("idle");
-  const sessionRef = useRef<any>(null);
+  const sessionRef = useRef<ConversationAgent | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Dynamically load the SDK only on the client side to avoid SSR ReferenceErrors
-    let SarvamSessionModule: any;
-    try {
-      const pkg = require("sarvam-convai-embed");
-      SarvamSessionModule = pkg.SarvamSession || pkg.default || pkg;
-    } catch (e) {
-      console.warn("Could not load sarvam-convai-embed");
-      return;
-    }
-
-    if (!SarvamSessionModule) return;
-
-    const session = new SarvamSessionModule({
+    const session = new ConversationAgent({
       apiKey: process.env.NEXT_PUBLIC_SARVAM_EMBED_KEY || "",
-      orgId: process.env.NEXT_PUBLIC_SARVAM_ORG_ID || "",
-      workspaceId: process.env.NEXT_PUBLIC_SARVAM_WORKSPACE_ID || "",
-      appId: process.env.NEXT_PUBLIC_SARVAM_AGENT_ID || "",
-      interactionType: "call"
-    });
-
-    session.on("stateChange", (newState: CallState) => {
-      setCallState(newState);
+      config: {
+        org_id: process.env.NEXT_PUBLIC_SARVAM_ORG_ID || "",
+        workspace_id: process.env.NEXT_PUBLIC_SARVAM_WORKSPACE_ID || "",
+        app_id: process.env.NEXT_PUBLIC_SARVAM_AGENT_ID || "",
+        interaction_type: InteractionType.CALL,
+        user_identifier_type: "browser",
+        user_identifier: "web_user",
+        input_sample_rate: 16000,
+        output_sample_rate: 16000
+      },
+      stateCallback: (newState: AgentState) => {
+        // Map connected to listening, and error to idle to match the UI states
+        if (newState === "connected" || newState === "listening") {
+          setCallState("listening");
+        } else if (newState === "error") {
+          setCallState("idle");
+        } else {
+          setCallState(newState as CallState);
+        }
+      }
     });
 
     sessionRef.current = session;
