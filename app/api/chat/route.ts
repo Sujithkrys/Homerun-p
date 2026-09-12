@@ -9,10 +9,11 @@ function getProvider(): "sarvam" | "gemini" {
 
 // Compact system prompt for Sarvam to stay well within its 32,000 token context window
 function getSarvamSystemPrompt(): string {
-  return SYSTEM_PROMPT
+  let prompt = SYSTEM_PROMPT
     .replace(/(\n\s{2,})/g, " ")
     .replace(/:\s+/g, ":")
     .replace(/,\s+/g, ",");
+  return prompt + " IMPORTANT: You MUST always reply in English, no matter what language the user speaks.";
 }
 
 // ---- SARVAM AI (OpenAI-compatible API) ----

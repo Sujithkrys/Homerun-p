@@ -24,21 +24,23 @@ export function useSarvamVoice() {
     const sessionId = getOrCreateSessionId();
     console.log("[useSarvamVoice] Session ID being used:", sessionId);
 
+    const configObject = {
+      org_id: process.env.NEXT_PUBLIC_SARVAM_ORG_ID || "",
+      workspace_id: process.env.NEXT_PUBLIC_SARVAM_WORKSPACE_ID || "",
+      app_id: process.env.NEXT_PUBLIC_SARVAM_AGENT_ID || "",
+      interaction_type: InteractionType.CALL,
+      user_identifier_type: "custom",
+      user_identifier: sessionId,
+      input_sample_rate: 16000 as const,
+      output_sample_rate: 16000 as const
+    };
+
+    console.log("[useSarvamVoice] Full session config:", JSON.stringify(configObject));
+
     const session = new ConversationAgent({
       apiKey: process.env.NEXT_PUBLIC_SARVAM_EMBED_KEY || "",
       audioInterface: new BrowserAudioInterface(),
-      config: {
-        org_id: process.env.NEXT_PUBLIC_SARVAM_ORG_ID || "",
-        workspace_id: process.env.NEXT_PUBLIC_SARVAM_WORKSPACE_ID || "",
-        app_id: process.env.NEXT_PUBLIC_SARVAM_AGENT_ID || "",
-        interaction_type: InteractionType.CALL,
-        user_identifier_type: "custom",
-        user_identifier: sessionId,
-        // @ts-ignore - explicitly requested by user to ensure it's passed despite type definition
-        userId: sessionId,
-        input_sample_rate: 16000,
-        output_sample_rate: 16000
-      },
+      config: configObject,
       stateCallback: (newState: AgentState) => {
         // Map connected to listening, and error to idle to match the UI states
         if (newState === "connected" || newState === "listening") {
