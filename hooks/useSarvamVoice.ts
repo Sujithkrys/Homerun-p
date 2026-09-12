@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ConversationAgent, AgentState, InteractionType } from "sarvam-conv-ai-sdk";
+import { ConversationAgent, AgentState, InteractionType, BrowserAudioInterface } from "sarvam-conv-ai-sdk";
 
 export type CallState = "idle" | "connecting" | "listening" | "speaking";
 
@@ -13,6 +13,7 @@ export function useSarvamVoice() {
 
     const session = new ConversationAgent({
       apiKey: process.env.NEXT_PUBLIC_SARVAM_EMBED_KEY || "",
+      audioInterface: new BrowserAudioInterface(),
       config: {
         org_id: process.env.NEXT_PUBLIC_SARVAM_ORG_ID || "",
         workspace_id: process.env.NEXT_PUBLIC_SARVAM_WORKSPACE_ID || "",
