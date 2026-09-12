@@ -2,8 +2,8 @@ import { SYSTEM_PROMPT } from "@/lib/system-prompt";
 
 // Determine which provider to use based on available API keys
 function getProvider(): "sarvam" | "gemini" {
-  if (process.env.SARVAM_API_KEY) return "sarvam";
   if (process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_API_KEY) return "gemini";
+  if (process.env.SARVAM_API_KEY) return "sarvam";
   return "gemini"; // default
 }
 
@@ -76,6 +76,9 @@ async function callGemini(message: string, history: any[]) {
   const model = genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
     systemInstruction: SYSTEM_PROMPT,
+    generationConfig: {
+      responseMimeType: "application/json",
+    },
   });
 
   // Build chat history in Gemini format
