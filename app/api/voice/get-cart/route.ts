@@ -5,6 +5,7 @@ import { CartItem } from "@/lib/types";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    console.log("[get-cart] Raw request body:", JSON.stringify(body));
     const { session_id } = body;
 
     if (!session_id) {
