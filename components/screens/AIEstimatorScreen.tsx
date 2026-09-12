@@ -195,15 +195,6 @@ export default function AIEstimatorScreen({
               onAddSuggestion={onAddSuggestion}
               onAddToCart={onAddToCart}
               onAddAllToCart={onAddAllToCart}
-              onPlayAudio={(text) => {
-                setPlayingMessageId(msg.id);
-                voice.playBotAudio(text);
-              }}
-              onStopAudio={() => {
-                setPlayingMessageId(null);
-                voice.stopAudio();
-              }}
-              isPlayingAudio={voice.isPlayingAudio && playingMessageId === msg.id}
             />
           ))
         )}

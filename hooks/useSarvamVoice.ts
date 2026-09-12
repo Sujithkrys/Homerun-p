@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-// We import SarvamSession from the newly installed SDK
-import SarvamSession from "sarvam-conval-embed";
 
 export type CallState = "idle" | "connecting" | "listening" | "speaking";
 
@@ -11,9 +9,21 @@ export function useSarvamVoice() {
   const sessionRef = useRef<any>(null);
 
   useEffect(() => {
-    // Initialize the Sarvam Session instance
-    // The instructions specified using the env variables and interactionType = "call"
-    const session = new SarvamSession({
+    if (typeof window === "undefined") return;
+
+    // Dynamically load the SDK only on the client side to avoid SSR ReferenceErrors
+    let SarvamSessionModule: any;
+    try {
+      const pkg = require("sarvam-convai-embed");
+      SarvamSessionModule = pkg.SarvamSession || pkg.default || pkg;
+    } catch (e) {
+      console.warn("Could not load sarvam-convai-embed");
+      return;
+    }
+
+    if (!SarvamSessionModule) return;
+
+    const session = new SarvamSessionModule({
       apiKey: process.env.NEXT_PUBLIC_SARVAM_EMBED_KEY || "",
       orgId: process.env.NEXT_PUBLIC_SARVAM_ORG_ID || "",
       workspaceId: process.env.NEXT_PUBLIC_SARVAM_WORKSPACE_ID || "",
@@ -21,7 +31,6 @@ export function useSarvamVoice() {
       interactionType: "call"
     });
 
-    // Listen for state changes from the SDK
     session.on("stateChange", (newState: CallState) => {
       setCallState(newState);
     });
