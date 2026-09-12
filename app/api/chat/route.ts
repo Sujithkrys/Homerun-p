@@ -2,9 +2,9 @@ import { SYSTEM_PROMPT } from "@/lib/system-prompt";
 
 // Determine which provider to use based on available API keys
 function getProvider(): "sarvam" | "gemini" {
-  if (process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_API_KEY) return "gemini";
   if (process.env.SARVAM_API_KEY) return "sarvam";
-  return "gemini"; // default
+  if (process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_API_KEY) return "gemini";
+  return "sarvam"; // default
 }
 
 // Compact system prompt for Sarvam to stay well within its 32,000 token context window
