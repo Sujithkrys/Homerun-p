@@ -200,7 +200,7 @@ export default function MobileAppChat({
       )}
 
       {/* Bottom Message Input Bar */}
-      <div className="p-2.5 pb-6 bg-white border-t border-slate-200 shrink-0">
+      <div className="p-2.5 pb-6 bg-white shrink-0">
         <form
           onSubmit={handleSubmit}
           className="flex items-center gap-2 p-[6px] rounded-[24px] border border-slate-200 bg-white shadow-none"

@@ -236,7 +236,7 @@ export default function AIEstimatorScreen({
       </div>
 
       {/* Chat Input Bar */}
-      <div className="p-2.5 sm:p-3 bg-white border-t border-[#eeeeee] shrink-0">
+      <div className="p-2.5 sm:p-3 bg-white shrink-0">
         <div className="flex items-center gap-2">
           {/* Voice Mic Button */}
           <VoiceButton callState={callState} onStart={start} onStop={stop} />
