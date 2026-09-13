@@ -20,11 +20,8 @@ export default function DownloadEstimateButton({
 }: DownloadEstimateButtonProps) {
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Condition to show: message has cart_items > 0 AND (estimation_summary OR project_estimate)
-  const shouldShow =
-    items &&
-    items.length > 0 &&
-    Boolean(estimationSummary || projectEstimate);
+  const hasItems = (items && items.length > 0) || (projectEstimate?.rooms && projectEstimate.rooms.length > 0);
+  const shouldShow = hasItems && Boolean(estimationSummary || projectEstimate);
 
   if (!shouldShow) {
     return null;

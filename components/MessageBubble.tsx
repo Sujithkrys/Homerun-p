@@ -93,7 +93,9 @@ export default function MessageBubble({
   const time = message.timestamp || "Just now";
 
   // Calculate cart total for WhatsApp in-bubble cart card
-  const itemsToDisplay = message.cart_items || [];
+  const itemsToDisplay = (message.cart_items && message.cart_items.length > 0)
+    ? message.cart_items
+    : (message.recommended_products || []);
   const cartTotal = itemsToDisplay.reduce((sum, item) => sum + item.total, 0);
 
   // ================= WHATSAPP VARIANT =================
