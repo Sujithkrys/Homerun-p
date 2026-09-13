@@ -53,7 +53,7 @@ export function useSarvamVoice() {
       apiKey: process.env.NEXT_PUBLIC_SARVAM_EMBED_KEY || "",
       audioInterface: new BrowserAudioInterface(),
       config: configObject,
-      eventCallback: async (event: any) => {
+      transcriptCallback: async (event: any) => {
         if (event.type === "server.event.transcription") {
           console.log("[Transcript] New entry:", event.role, event.content);
           setTranscript((prev) => {
