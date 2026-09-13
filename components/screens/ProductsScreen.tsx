@@ -31,7 +31,53 @@ export default function ProductsScreen({
   const [activeFilter, setActiveFilter] = useState<string>("Category");
   const [selectedProduct, setSelectedProduct] = useState<StructuredProduct | null>(null);
 
-  const products = STRUCTURED_CATALOG.filter((p) => p.category === categoryName);
+  const catalogProducts = STRUCTURED_CATALOG.filter((p) => p.category === categoryName);
+
+  // Fallback to dummy products if the category hasn't been populated in the catalog yet
+  const products: StructuredProduct[] = catalogProducts.length > 0 ? catalogProducts : [
+    {
+      id: `dummy-${categoryName.toLowerCase().replace(/\s+/g, '-')}-1`,
+      name: `Premium ${categoryName} Material`,
+      brand: "Top Brand",
+      category: categoryName,
+      image: "",
+      mrp: 1200,
+      price: 1050,
+      bulk_price: 900,
+      bulk_threshold: 100,
+      discount_percentage: 12,
+      unit: "unit",
+      badges: ["Assured 2% Cashback", "Free Delivery"],
+    },
+    {
+      id: `dummy-${categoryName.toLowerCase().replace(/\s+/g, '-')}-2`,
+      name: `Standard ${categoryName} Pack`,
+      brand: "Value Brand",
+      category: categoryName,
+      image: "",
+      mrp: 850,
+      price: 780,
+      bulk_price: null,
+      bulk_threshold: null,
+      discount_percentage: 8,
+      unit: "pack",
+      badges: ["Free Delivery"],
+    },
+    {
+      id: `dummy-${categoryName.toLowerCase().replace(/\s+/g, '-')}-3`,
+      name: `Bulk ${categoryName} Supply`,
+      brand: "Pro Build",
+      category: categoryName,
+      image: "",
+      mrp: 5400,
+      price: 4900,
+      bulk_price: 4500,
+      bulk_threshold: 50,
+      discount_percentage: 9,
+      unit: "pallet",
+      badges: [],
+    }
+  ];
 
   const filters = ["Category", "Brand", "Type", "Price"];
 
@@ -108,14 +154,18 @@ export default function ProductsScreen({
             return (
               <div key={product.id} className="bg-white rounded-2xl overflow-hidden flex flex-col h-full shadow-sm border border-slate-100">
                 {/* Image Area */}
-                <div className="relative aspect-[4/3] p-4 bg-white flex items-center justify-center">
+                <div className="relative aspect-[4/3] p-4 bg-white flex items-center justify-center border-b border-slate-50">
                   {product.discount_percentage && (
-                    <div className="absolute top-2 left-2 bg-[#f4d03f] text-slate-900 text-[10px] font-bold px-1.5 py-0.5 rounded-sm">
+                    <div className="absolute top-2 left-2 bg-[#f4d03f] text-slate-900 text-[10px] font-bold px-1.5 py-0.5 rounded-sm z-10 shadow-sm">
                       {product.discount_percentage}% OFF
                     </div>
                   )}
-                  {product.image && (
+                  {product.image ? (
                     <img src={product.image} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                      <span className="text-[10px] text-slate-400 font-medium italic px-2 text-center">Image will attach soon</span>
+                    </div>
                   )}
                 </div>
 
