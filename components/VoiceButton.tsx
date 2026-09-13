@@ -1,15 +1,19 @@
 "use client";
 
-import { useSarvamVoice, CallState } from "@/hooks/useSarvamVoice";
+import { CallState } from "@/hooks/useSarvamVoice";
 
-export function VoiceButton() {
-  const { callState, start, stop } = useSarvamVoice();
+interface VoiceButtonProps {
+  callState: CallState;
+  onStart: () => void;
+  onStop: () => void;
+}
 
+export function VoiceButton({ callState, onStart, onStop }: VoiceButtonProps) {
   const handleClick = () => {
     if (callState === "idle") {
-      start();
+      onStart();
     } else {
-      stop();
+      onStop();
     }
   };
 

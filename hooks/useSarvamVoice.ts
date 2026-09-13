@@ -3,6 +3,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { ConversationAgent, AgentState, InteractionType, BrowserAudioInterface } from "sarvam-conv-ai-sdk";
 export type CallState = "idle" | "connecting" | "listening" | "speaking";
 
+export type TranscriptEntry = {
+  role: "user" | "bot";
+  content: string;
+  timestamp: number;
+};
+
+
 // Helper to get or create a persistent session ID
 export function getOrCreateSessionId() {
   if (typeof window === "undefined") return "server-session";
@@ -16,6 +23,7 @@ export function getOrCreateSessionId() {
 
 export function useSarvamVoice() {
   const [callState, setCallState] = useState<CallState>("idle");
+  const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const sessionRef = useRef<ConversationAgent | null>(null);
 
   useEffect(() => {
@@ -45,6 +53,22 @@ export function useSarvamVoice() {
       apiKey: process.env.NEXT_PUBLIC_SARVAM_EMBED_KEY || "",
       audioInterface: new BrowserAudioInterface(),
       config: configObject,
+      eventCallback: async (event: any) => {
+        if (event.type === "server.event.transcription") {
+          console.log("[Transcript] New entry:", event.role, event.content);
+          setTranscript((prev) => {
+            // Deduplicate by timestamp
+            if (prev.some((entry) => entry.timestamp === event.timestamp)) {
+              return prev;
+            }
+            return [...prev, {
+              role: event.role,
+              content: event.content,
+              timestamp: event.timestamp
+            }];
+          });
+        }
+      },
       stateCallback: (newState: AgentState) => {
         // Map connected to listening, and error to idle to match the UI states
         if (newState === "connected" || newState === "listening") {
@@ -69,6 +93,7 @@ export function useSarvamVoice() {
 
   const start = useCallback(() => {
     if (sessionRef.current && callState === "idle") {
+      setTranscript([]);
       sessionRef.current.start();
     }
   }, [callState]);
@@ -83,5 +108,7 @@ export function useSarvamVoice() {
     callState,
     start,
     stop,
+    transcript,
+    setTranscript,
   };
 }

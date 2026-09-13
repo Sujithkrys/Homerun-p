@@ -4,7 +4,8 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Message, CartItem, Suggestion } from "@/lib/types";
 import MessageBubble from "../MessageBubble";
 import QuickActions from "../QuickActions";
-import VoiceButton from "../VoiceButton";
+import { VoiceButton } from "../VoiceButton";
+import { useSarvamVoice } from "@/hooks/useSarvamVoice";
 import {
   ArrowLeft,
   ShoppingCart,
@@ -52,6 +53,7 @@ export default function AIEstimatorScreen({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isWeb = variant === "web";
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const { callState, start, stop, transcript } = useSarvamVoice();
 
   useEffect(() => {
     if (initialInput) {
@@ -61,7 +63,7 @@ export default function AIEstimatorScreen({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
+  }, [messages, transcript, isLoading]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,7 +175,7 @@ export default function AIEstimatorScreen({
 
       {/* Messages Stream (Maximizes available height) */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar p-3 sm:p-4 space-y-2">
-        {messages.length === 0 ? (
+        {messages.length === 0 && transcript.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8">
             <div className="w-12 h-12 rounded-2xl bg-[#eef7f3] flex items-center justify-center text-[#1a7a3a] mb-3">
               <HomeRunThunder className="w-6 h-6 text-[#1a7a3a]" />
@@ -186,17 +188,34 @@ export default function AIEstimatorScreen({
             </p>
           </div>
         ) : (
-          messages.map((msg) => (
-            <MessageBubble
-              key={msg.id}
-              message={msg}
-              variant="in-app"
-              allCartItems={cart}
-              onAddSuggestion={onAddSuggestion}
-              onAddToCart={onAddToCart}
-              onAddAllToCart={onAddAllToCart}
-            />
-          ))
+          <>
+            {messages.map((msg) => (
+              <MessageBubble
+                key={msg.id}
+                message={msg}
+                variant="in-app"
+                allCartItems={cart}
+                onAddSuggestion={onAddSuggestion}
+                onAddToCart={onAddToCart}
+                onAddAllToCart={onAddAllToCart}
+              />
+            ))}
+            {transcript.map((entry) => (
+              <MessageBubble
+                key={`transcript-${entry.timestamp}`}
+                message={{
+                  id: `transcript-${entry.timestamp}`,
+                  role: entry.role === "bot" ? "assistant" : "user",
+                  content: entry.content,
+                }}
+                variant="in-app"
+                allCartItems={cart}
+                onAddSuggestion={onAddSuggestion}
+                onAddToCart={onAddToCart}
+                onAddAllToCart={onAddAllToCart}
+              />
+            ))}
+          </>
         )}
 
         {/* AI Typing Indicator */}
@@ -220,7 +239,7 @@ export default function AIEstimatorScreen({
       <div className="p-2.5 sm:p-3 bg-white border-t border-[#eeeeee] shrink-0">
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           {/* Voice Mic Button */}
-          <VoiceButton />
+          <VoiceButton callState={callState} onStart={start} onStop={stop} />
 
           <input
             type="text"
