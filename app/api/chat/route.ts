@@ -175,6 +175,11 @@ export async function POST(req: Request) {
     parsed.cart_items = parsed.cart_items || [];
     parsed.estimation_summary = parsed.estimation_summary || null;
 
+    // Temporary debug log requested by user
+    parsed._debug_provider = provider;
+    parsed._debug_model = provider === "sarvam" ? (process.env.SARVAM_MODEL || "sarvam-105b-conversations") : "gemini-1.5-flash";
+    parsed._debug_user_message_received = message;
+
     return Response.json(parsed);
 
   } catch (error: any) {
