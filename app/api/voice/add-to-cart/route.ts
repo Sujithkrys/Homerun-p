@@ -37,8 +37,8 @@ export async function POST(req: Request) {
     
     cart.push(newItem);
 
-    // Write back to KV
-    await redis.set(key, JSON.stringify(cart));
+    // Write back to KV with 24 hour expiry
+    await redis.set(key, JSON.stringify(cart), "EX", 86400);
 
     return NextResponse.json({ success: true, cart });
   } catch (error: any) {

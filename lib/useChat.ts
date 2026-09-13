@@ -8,6 +8,7 @@ import {
   DemoOrder,
   BillDetails as BillDetailsType,
 } from "./types";
+import { getOrCreateSessionId } from "@/hooks/useSarvamVoice";
 
 export function mergeItemIntoCart(cart: CartItem[], newItem: CartItem): CartItem[] {
   const updated = [...cart];
@@ -68,7 +69,7 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
 
     const pollVoiceCart = async () => {
       try {
-        const sessionId = typeof window !== "undefined" ? localStorage.getItem("homerun_session_id") : null;
+        const sessionId = getOrCreateSessionId(mode);
         if (sessionId) {
           console.log("[CartPoll] Using session ID:", sessionId);
           const res = await fetch("/api/voice/get-cart", {

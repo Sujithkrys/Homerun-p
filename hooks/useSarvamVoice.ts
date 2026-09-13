@@ -10,18 +10,20 @@ export type TranscriptEntry = {
 };
 
 
-// Helper to get or create a persistent session ID
-export function getOrCreateSessionId() {
-  if (typeof window === "undefined") return "server-session";
-  let sessionId = localStorage.getItem("homerun_session_id");
-  if (!sessionId) {
-    sessionId = crypto.randomUUID();
-    localStorage.setItem("homerun_session_id", sessionId);
+// Helper to get or create a persistent session ID scoped by mode
+const sessionCache = new Map<string, string>();
+
+export function getOrCreateSessionId(mode: string = "default") {
+  if (typeof window === "undefined") return `server-session-${mode}`;
+  
+  if (!sessionCache.has(mode)) {
+    const newSessionId = crypto.randomUUID();
+    sessionCache.set(mode, newSessionId);
   }
-  return sessionId;
+  return sessionCache.get(mode)!;
 }
 
-export function useSarvamVoice() {
+export function useSarvamVoice(mode: string = "default") {
   const [callState, setCallState] = useState<CallState>("idle");
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const sessionRef = useRef<ConversationAgent | null>(null);
@@ -29,8 +31,8 @@ export function useSarvamVoice() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const sessionId = getOrCreateSessionId();
-    console.log("[useSarvamVoice] Session ID being used:", sessionId);
+    const sessionId = getOrCreateSessionId(mode);
+    console.log(`[useSarvamVoice] Session ID being used for mode ${mode}:`, sessionId);
 
     const configObject: any = {
       org_id: process.env.NEXT_PUBLIC_SARVAM_ORG_ID || "",

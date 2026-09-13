@@ -53,7 +53,7 @@ export default function AIEstimatorScreen({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isWeb = variant === "web";
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const { callState, start, stop, transcript } = useSarvamVoice();
+  const { callState, start, stop, transcript } = useSarvamVoice(variant);
 
   useEffect(() => {
     if (initialInput) {
@@ -246,12 +246,12 @@ export default function AIEstimatorScreen({
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Type your message..."
-            disabled={isLoading}
+            disabled={isLoading || callState !== "idle"}
             className="flex-1 text-xs sm:text-sm px-3.5 py-2.5 rounded-xl bg-[#f5f5f5] border border-[#e5e5e5] focus:bg-white focus:outline-hidden focus:border-[#1a7a3a] transition-all font-sans"
           />
           <button
             type="submit"
-            disabled={!inputText.trim() || isLoading}
+            disabled={!inputText.trim() || isLoading || callState !== "idle"}
             className="p-2.5 sm:p-3 rounded-xl bg-[#1a7a3a] text-white hover:bg-[#145f2d] disabled:opacity-40 active:scale-95 transition-all shadow-xs cursor-pointer disabled:cursor-default"
             aria-label="Send message"
           >
