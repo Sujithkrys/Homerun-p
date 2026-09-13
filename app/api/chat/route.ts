@@ -1,4 +1,4 @@
-import { SYSTEM_PROMPT } from "@/lib/system-prompt";
+import { SYSTEM_PROMPT, WHATSAPP_BEHAVIOR } from "@/lib/system-prompt";
 
 // Determine which provider to use based on available API keys
 function getProvider(): "sarvam" | "gemini" {
@@ -8,21 +8,25 @@ function getProvider(): "sarvam" | "gemini" {
 }
 
 // Compact system prompt for Sarvam to stay well within its 32,000 token context window
-function getSarvamSystemPrompt(): string {
+function getSarvamSystemPrompt(channel?: string): string {
   let prompt = SYSTEM_PROMPT
     .replace(/(\n\s{2,})/g, " ")
     .replace(/:\s+/g, ":")
     .replace(/,\s+/g, ",");
+    
+  if (channel === "whatsapp") {
+    prompt += "\n" + WHATSAPP_BEHAVIOR.replace(/(\n\s{2,})/g, " ");
+  }
   return prompt;
 }
 
 // ---- SARVAM AI (OpenAI-compatible API) ----
-async function callSarvam(message: string, history: any[]) {
+async function callSarvam(message: string, history: any[], channel?: string) {
   const apiKey = process.env.SARVAM_API_KEY!;
 
   // Build messages array in OpenAI format
   const messages: any[] = [
-    { role: "system", content: getSarvamSystemPrompt() },
+    { role: "system", content: getSarvamSystemPrompt(channel) },
   ];
 
   // Add conversation history
@@ -68,15 +72,17 @@ async function callSarvam(message: string, history: any[]) {
 }
 
 // ---- GEMINI (Google Generative AI) ----
-async function callGemini(message: string, history: any[]) {
+async function callGemini(message: string, history: any[], channel?: string) {
   const { GoogleGenerativeAI } = await import("@google/generative-ai");
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("Missing Google Gemini API key");
   const genAI = new GoogleGenerativeAI(apiKey);
 
+  const finalPrompt = channel === "whatsapp" ? SYSTEM_PROMPT + "\n" + WHATSAPP_BEHAVIOR : SYSTEM_PROMPT;
+
   const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
-    systemInstruction: SYSTEM_PROMPT,
+    systemInstruction: finalPrompt,
     generationConfig: {
       responseMimeType: "application/json",
     },
@@ -126,7 +132,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { message, history } = await req.json();
+    const { message, history, channel } = await req.json();
 
     if (!message || typeof message !== "string") {
       return Response.json({
@@ -137,14 +143,14 @@ export async function POST(req: Request) {
       });
     }
 
-    console.log(`[${provider.toUpperCase()}] User: ${message}`);
+    console.log(`[${provider.toUpperCase()}] User: ${message} (channel: ${channel || "web"})`);
 
     // Call the active provider
     let responseText: string;
     if (provider === "sarvam") {
-      responseText = await callSarvam(message, history || []);
+      responseText = await callSarvam(message, history || [], channel);
     } else {
-      responseText = await callGemini(message, history || []);
+      responseText = await callGemini(message, history || [], channel);
     }
 
     console.log(`[${provider.toUpperCase()}] Response length: ${responseText.length}`);

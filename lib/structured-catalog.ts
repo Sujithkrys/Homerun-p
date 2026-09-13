@@ -34,7 +34,7 @@ export const STRUCTURED_CATALOG: StructuredProduct[] = [
   // CEMENT
   {
     id: "cem-002",
-    name: "Adani ACC Suraksha Power PPC Cement, 50 Kg Bag",
+    name: "Adani ACC Suraksha Power PPC Cement",
     brand: "ACC",
     category: "Cement",
     image: "/images/acc_cement.jpg",
@@ -48,13 +48,13 @@ export const STRUCTURED_CATALOG: StructuredProduct[] = [
   },
   {
     id: "cem-001",
-    name: "Ultratech PPC Cement, 50 Kg Bag",
+    name: "UltraTech PPC Cement",
     brand: "UltraTech",
     category: "Cement",
     image: "/images/ultratech_cement.jpg",
-    mrp: 450,
-    price: 425,
-    bulk_price: 395,
+    mrp: 440,
+    price: 410,
+    bulk_price: 390,
     bulk_threshold: 50000,
     discount_percentage: 6,
     unit: "bag",
@@ -62,7 +62,7 @@ export const STRUCTURED_CATALOG: StructuredProduct[] = [
   },
   {
     id: "cem-003",
-    name: "Maha Cement Portland Pozzolana Cement",
+    name: "Maha PPC Cement",
     brand: "Maha",
     category: "Cement",
     image: "/images/maha_cement.jpg",
@@ -76,7 +76,7 @@ export const STRUCTURED_CATALOG: StructuredProduct[] = [
   },
   {
     id: "cem-004",
-    name: "Ramco Supergrade PPC Cement, 50 Kg",
+    name: "Ramco Supergrade PPC Cement",
     brand: "Ramco",
     category: "Cement",
     image: "/images/ramco_cement.jpg",
