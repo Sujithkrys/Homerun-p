@@ -223,7 +223,7 @@ export default function AIEstimatorScreen({
           <div className="flex items-center gap-2 my-2 ml-1">
             <div className="bg-white border border-slate-200 rounded-2xl px-3.5 py-2 flex items-center gap-1.5 shadow-2xs">
               <span className="text-xs text-slate-500 font-medium mr-1">
-                Estimating materials
+                Typing...
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-[#1a7a3a] dot-1" />
               <span className="w-1.5 h-1.5 rounded-full bg-[#1a7a3a] dot-2" />
@@ -237,7 +237,10 @@ export default function AIEstimatorScreen({
 
       {/* Chat Input Bar */}
       <div className="p-2.5 sm:p-3 bg-white border-t border-[#eeeeee] shrink-0">
-        <form onSubmit={handleSubmit} className="flex items-center gap-2">
+        <form 
+          onSubmit={handleSubmit} 
+          className="flex items-center gap-2 p-[6px] rounded-[24px] border border-slate-200 bg-white shadow-none"
+        >
           {/* Voice Mic Button */}
           <VoiceButton callState={callState} onStart={start} onStop={stop} />
 
@@ -247,12 +250,16 @@ export default function AIEstimatorScreen({
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Type your message..."
             disabled={isLoading || callState !== "idle"}
-            className="flex-1 text-xs sm:text-sm px-3.5 py-2.5 rounded-xl bg-[#f5f5f5] border border-[#e5e5e5] focus:bg-white focus:outline-hidden focus:border-[#1a7a3a] transition-all font-sans"
+            className="flex-1 text-xs sm:text-sm px-2 py-2 bg-transparent focus:outline-hidden font-sans"
           />
           <button
             type="submit"
             disabled={!inputText.trim() || isLoading || callState !== "idle"}
-            className="p-2.5 sm:p-3 rounded-xl bg-[#1a7a3a] text-white hover:bg-[#145f2d] disabled:opacity-40 active:scale-95 transition-all shadow-xs cursor-pointer disabled:cursor-default"
+            className={`flex items-center justify-center shrink-0 h-10 w-10 rounded-full transition-all duration-200 ${
+              !inputText.trim() || isLoading || callState !== "idle"
+                ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                : "bg-[#1a7a3a] text-white shadow-sm hover:bg-[#145f2d] active:scale-95 cursor-pointer"
+            }`}
             aria-label="Send message"
           >
             <Send className="w-4 h-4" />

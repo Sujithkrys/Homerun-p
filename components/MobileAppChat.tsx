@@ -176,7 +176,7 @@ export default function MobileAppChat({
               <div className="flex items-center gap-2 my-1.5 ml-1">
                 <div className="bg-white border border-slate-200 rounded-2xl px-3 py-2 flex items-center gap-1 shadow-2xs">
                   <span className="text-[11px] text-slate-400 font-medium mr-1">
-                    Calculating
+                    Typing...
                   </span>
                   <span className="w-1.5 h-1.5 rounded-full bg-homerun-green dot-1"></span>
                   <span className="w-1.5 h-1.5 rounded-full bg-homerun-green dot-2"></span>
@@ -200,27 +200,33 @@ export default function MobileAppChat({
       )}
 
       {/* Bottom Message Input Bar */}
-      <form
-        onSubmit={handleSubmit}
-        className="p-2.5 pb-6 bg-white border-t border-slate-200 flex items-center gap-1.5 shrink-0"
-      >
-        <input
-          type="text"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          placeholder="Type material or project estimate..."
-          disabled={isLoading}
-          className="flex-1 px-3 py-2 bg-slate-100 rounded-xl text-xs text-slate-800 placeholder-slate-400 border border-slate-200 focus:outline-none focus:border-homerun-green"
-        />
-        <button
-          type="submit"
-          disabled={!inputText.trim() || isLoading}
-          className="w-9 h-9 bg-homerun-green hover:bg-homerun-green-hover text-white rounded-xl disabled:opacity-40 transition-all flex items-center justify-center shrink-0 shadow-xs active:scale-95"
-          aria-label="Send message"
+      <div className="p-2.5 pb-6 bg-white border-t border-slate-200 shrink-0">
+        <form
+          onSubmit={handleSubmit}
+          className="flex items-center gap-2 p-[6px] rounded-[24px] border border-slate-200 bg-white shadow-none"
         >
-          <Send className="w-4 h-4 ml-0.5" />
-        </button>
-      </form>
+          <input
+            type="text"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            placeholder="Type material or project estimate..."
+            disabled={isLoading}
+            className="flex-1 text-xs sm:text-sm px-2 py-2 bg-transparent focus:outline-hidden font-sans"
+          />
+          <button
+            type="submit"
+            disabled={!inputText.trim() || isLoading}
+            className={`flex items-center justify-center shrink-0 h-10 w-10 rounded-full transition-all duration-200 ${
+              !inputText.trim() || isLoading
+                ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                : "bg-homerun-green text-white shadow-sm hover:bg-homerun-green-hover active:scale-95 cursor-pointer"
+            }`}
+            aria-label="Send message"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </form>
+      </div>
 
       {/* ================= BOTTOM SHEET CART OVERLAY (~70% HEIGHT) ================= */}
       {isBottomSheetOpen && (
