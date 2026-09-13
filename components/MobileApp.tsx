@@ -5,6 +5,7 @@ import { Message, CartItem, Suggestion, AppScreen, DemoOrder, BillDetails as Bil
 import HomeScreen from "./screens/HomeScreen";
 import AIEstimatorScreen from "./screens/AIEstimatorScreen";
 import CategoriesScreen from "./screens/CategoriesScreen";
+import ProductsScreen from "./screens/ProductsScreen";
 import OrdersScreen from "./screens/OrdersScreen";
 import AccountScreen from "./screens/AccountScreen";
 import BottomNavBar from "./BottomNavBar";
@@ -63,11 +64,11 @@ export default function MobileApp({
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  const [activeCategory, setActiveCategory] = useState<string>("");
+
   const handleSelectCategory = (categoryName: string) => {
-    onNavigate("ai-estimator");
-    setTimeout(() => {
-      onSendMessage(`Show me ${categoryName} products with prices`);
-    }, 300);
+    setActiveCategory(categoryName);
+    onNavigate("products");
   };
 
   const handleNavigateToEstimatorWithPrompt = (prompt?: string) => {
@@ -115,6 +116,18 @@ export default function MobileApp({
             onBack={() => onNavigate("home")}
             onSelectCategory={handleSelectCategory}
             variant="mobile"
+            cartCount={cartCount}
+            onOpenCart={() => setIsCartOpen(true)}
+          />
+        )}
+
+        {currentScreen === "products" && (
+          <ProductsScreen
+            categoryName={activeCategory}
+            onBack={() => onNavigate("categories")}
+            onAddToCart={(item) => onAddToCart?.(item)}
+            onUpdateQuantity={(id, qty) => onUpdateQuantity(id, qty)}
+            cart={cart}
             cartCount={cartCount}
             onOpenCart={() => setIsCartOpen(true)}
           />

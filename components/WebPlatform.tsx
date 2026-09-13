@@ -12,6 +12,7 @@ import {
 import TopNavBar from "./TopNavBar";
 import HomeScreen from "./screens/HomeScreen";
 import CategoriesScreen from "./screens/CategoriesScreen";
+import ProductsScreen from "./screens/ProductsScreen";
 import OrdersScreen from "./screens/OrdersScreen";
 import AccountScreen from "./screens/AccountScreen";
 import AIEstimatorScreen from "./screens/AIEstimatorScreen";
@@ -110,11 +111,11 @@ export default function WebPlatform({
     onPlaceOrder();
   };
 
+  const [activeCategory, setActiveCategory] = useState<string>("");
+
   const handleSelectCategory = (categoryName: string) => {
-    onNavigate("ai-estimator");
-    setTimeout(() => {
-      onSendMessage(`Show me ${categoryName} products with prices`);
-    }, 300);
+    setActiveCategory(categoryName);
+    onNavigate("products");
   };
 
   const handleNavigateToEstimatorWithPrompt = (prompt?: string) => {
@@ -161,6 +162,18 @@ export default function WebPlatform({
             onBack={() => onNavigate("home")}
             onSelectCategory={handleSelectCategory}
             variant="web"
+            cartCount={cartCount}
+            onOpenCart={() => setIsSidebarCartOpen(true)}
+          />
+        )}
+
+        {currentScreen === "products" && (
+          <ProductsScreen
+            categoryName={activeCategory}
+            onBack={() => onNavigate("categories")}
+            onAddToCart={(item) => onAddToCart?.(item)}
+            onUpdateQuantity={(id, qty) => onUpdateQuantity(id, qty)}
+            cart={cart}
             cartCount={cartCount}
             onOpenCart={() => setIsSidebarCartOpen(true)}
           />

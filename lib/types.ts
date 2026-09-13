@@ -91,7 +91,7 @@ export interface DeliveryInfo {
   payment: string;
 }
 
-export type AppScreen = "home" | "ai-estimator" | "categories" | "orders" | "account";
+export type AppScreen = "home" | "ai-estimator" | "categories" | "orders" | "account" | "products";
 
 export interface ProductCategory {
   id: string;

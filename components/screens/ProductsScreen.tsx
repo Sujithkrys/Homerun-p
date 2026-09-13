@@ -1,0 +1,205 @@
+"use client";
+
+import React, { useState } from "react";
+import { ChevronLeft, Search, ShoppingCart } from "lucide-react";
+import { STRUCTURED_CATALOG, StructuredProduct } from "@/lib/structured-catalog";
+import VariantBottomSheet from "../VariantBottomSheet";
+import { CartItem } from "@/lib/types";
+
+interface ProductsScreenProps {
+  categoryName: string;
+  onBack: () => void;
+  onAddToCart: (item: CartItem) => void;
+  onUpdateQuantity: (productId: string, newQty: number) => void;
+  cart: CartItem[];
+  cartCount: number;
+  onOpenCart?: () => void;
+}
+
+export default function ProductsScreen({
+  categoryName,
+  onBack,
+  onAddToCart,
+  onUpdateQuantity,
+  cart,
+  cartCount,
+  onOpenCart,
+}: ProductsScreenProps) {
+  const [activeFilter, setActiveFilter] = useState<string>("Category");
+  const [selectedProduct, setSelectedProduct] = useState<StructuredProduct | null>(null);
+
+  const products = STRUCTURED_CATALOG.filter((p) => p.category === categoryName);
+
+  const filters = ["Category", "Brand", "Type", "Price"];
+
+  const handleAddDirect = (product: StructuredProduct) => {
+    const item: CartItem = {
+      product_id: product.id,
+      name: product.name,
+      quantity: 1,
+      unit: product.unit,
+      unit_price: product.price,
+      total: product.price,
+      reason: "Added via Product Catalog",
+    };
+    onAddToCart(item);
+  };
+
+  const getCartQty = (productId: string) => {
+    const item = cart.find((c) => c.product_id === productId);
+    return item ? item.quantity : 0;
+  };
+
+  return (
+    <div className="w-full h-full flex flex-col bg-[#f5f5f5] overflow-hidden">
+      {/* Header */}
+      <div className="bg-[#f5f5f5] px-4 py-3 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="p-1 -ml-1 text-slate-800">
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-lg font-bold text-slate-900 truncate">
+            {categoryName}
+          </h1>
+        </div>
+        <div className="flex items-center gap-4">
+          <button className="text-slate-600">
+            <Search className="w-5 h-5" />
+          </button>
+          <button onClick={onOpenCart} className="relative text-slate-600">
+            <div className="w-9 h-9 bg-slate-800 rounded-full flex items-center justify-center">
+              <ShoppingCart className="w-5 h-5 text-white" />
+            </div>
+            {cartCount > 0 && (
+              <div className="absolute -top-1 -right-1 bg-[#1a7a3a] text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-white">
+                {cartCount}
+              </div>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Pills */}
+      <div className="px-4 pb-3 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 border-b border-slate-200">
+        <button className="p-2 border border-slate-300 rounded-lg bg-white shrink-0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+        </button>
+        {filters.map((filter) => (
+          <button
+            key={filter}
+            className="px-3 py-1.5 border border-slate-300 rounded-lg bg-white text-xs font-bold text-slate-700 flex items-center gap-1 shrink-0"
+          >
+            {filter} <span className="text-slate-400">v</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Product Grid */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4">
+          {products.map((product) => {
+            const hasVariants = !!product.variants;
+            const qty = getCartQty(product.id);
+            const variantCount = hasVariants ? Object.values(product.variants || {}).flat().length : 0;
+
+            return (
+              <div key={product.id} className="bg-white rounded-2xl overflow-hidden flex flex-col h-full shadow-sm border border-slate-100">
+                {/* Image Area */}
+                <div className="relative aspect-[4/3] p-4 bg-white flex items-center justify-center">
+                  {product.discount_percentage && (
+                    <div className="absolute top-2 left-2 bg-[#f4d03f] text-slate-900 text-[10px] font-bold px-1.5 py-0.5 rounded-sm">
+                      {product.discount_percentage}% OFF
+                    </div>
+                  )}
+                  {product.image && (
+                    <img src={product.image} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="p-3 flex flex-col flex-1">
+                  {/* Badges */}
+                  <div className="flex flex-wrap gap-1 mb-1.5">
+                    {product.badges?.map((badge, idx) => (
+                      <div key={idx} className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm ${
+                        badge === "Free Delivery" ? "bg-[#1a7a3a] text-white" : ""
+                      }`}>
+                        {badge}
+                        {badge === "Free Delivery" && <div className="text-[8px] font-normal font-sans opacity-90 mt-0.5">on orders above ₹500</div>}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Title */}
+                  <div className="text-xs font-bold text-slate-800 line-clamp-2 leading-tight mb-2 flex-1">
+                    {product.name}
+                  </div>
+
+                  {/* Pricing */}
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <div className="text-sm font-extrabold text-slate-900">₹ {product.price}</div>
+                    {product.mrp > product.price && (
+                      <div className="text-[10px] font-medium text-slate-400 line-through">₹ {product.mrp}</div>
+                    )}
+                  </div>
+
+                  {/* Cashback Box (if present) */}
+                  {product.badges?.includes("Assured 2% Cashback") && (
+                    <div className="bg-[#fdf9e6] rounded-md p-1.5 mb-2 flex items-start gap-1.5">
+                      <div className="text-[#d4a300] shrink-0">🎁</div>
+                      <div>
+                        <div className="text-[10px] font-bold text-slate-900">Assured 2% Cashback</div>
+                        <div className="text-[9px] text-slate-600">On purchases above ₹50,000</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bulk Price */}
+                  {product.bulk_price && (
+                    <div className="text-[10px] font-bold text-[#1f72b6] mb-3 border-b border-dashed border-[#1f72b6]/30 inline-block pb-0.5">
+                      Unlock Bulk Prices of ₹{product.bulk_price}
+                    </div>
+                  )}
+
+                  {/* Action Button */}
+                  <div className="mt-auto pt-1">
+                    {hasVariants ? (
+                      <button
+                        onClick={() => setSelectedProduct(product)}
+                        className="w-full py-2 rounded-lg border border-[#1a7a3a] text-[#1a7a3a] text-xs font-bold"
+                      >
+                        {variantCount} Options
+                      </button>
+                    ) : qty > 0 ? (
+                      <div className="w-full h-8 bg-[#1a7a3a] rounded-lg flex items-center justify-between px-3 text-white">
+                        <button onClick={() => onUpdateQuantity(product.id, qty - 1)} className="font-bold p-1 text-sm">&minus;</button>
+                        <span className="font-bold text-xs">{qty}</span>
+                        <button onClick={() => onUpdateQuantity(product.id, qty + 1)} className="font-bold p-1 text-sm">+</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleAddDirect(product)}
+                        className="w-full py-2 rounded-lg border border-[#1a7a3a] text-[#1a7a3a] text-xs font-bold hover:bg-green-50"
+                      >
+                        Add
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Variant Bottom Sheet */}
+      {selectedProduct && (
+        <VariantBottomSheet
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onAddToCart={onAddToCart}
+        />
+      )}
+    </div>
+  );
+}

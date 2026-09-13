@@ -62,62 +62,41 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
   const [isLoading, setIsLoading] = useState(false);
   const lastVoiceCartCountRef = useRef(0);
 
-  // Poll voice cart from Vercel KV
+  // Sync cart from Vercel KV
+  const syncCart = async () => {
+    try {
+      const sessionId = getOrCreateSessionId(mode);
+      if (sessionId) {
+        const res = await fetch("/api/cart/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.cart) {
+            setCart(data.cart);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to sync cart:", err);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout;
 
-    const pollVoiceCart = async () => {
-      try {
-        const sessionId = getOrCreateSessionId(mode);
-        if (sessionId) {
-          console.log("[CartPoll] Using session ID:", sessionId);
-          const res = await fetch("/api/voice/get-cart", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ session_id: sessionId }),
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success && data.cart) {
-              const currentVoiceCount = data.cart.length;
-              const newItemsCount = currentVoiceCount - lastVoiceCartCountRef.current;
-              
-              if (newItemsCount > 0) {
-                const newItems = data.cart.slice(lastVoiceCartCountRef.current);
-                setCart((prevCart) => {
-                  let updated = [...prevCart];
-                  newItems.forEach((item: any) => {
-                    // Normalize the item since Voice API sends product_name, text UI expects name
-                    const normalizedItem: CartItem = {
-                      product_id: `voice-${Date.now()}-${Math.random()}`,
-                      name: item.product_name || item.name || "Unknown Item",
-                      quantity: item.quantity || 1,
-                      unit: item.unit || "unit",
-                      unit_price: item.unit_price || 0,
-                      total: (item.quantity || 1) * (item.unit_price || 0),
-                      reason: item.reason || "Added via Voice Assistant",
-                    };
-                    updated = mergeItemIntoCart(updated, normalizedItem);
-                  });
-                  return updated;
-                });
-                lastVoiceCartCountRef.current = currentVoiceCount;
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Failed to poll voice cart:", err);
-      }
-
+    const poll = async () => {
+      await syncCart();
       if (isMounted) {
-        timeoutId = setTimeout(pollVoiceCart, 3000);
+        timeoutId = setTimeout(poll, 3000);
       }
     };
 
-    pollVoiceCart();
+    poll();
 
     return () => {
       isMounted = false;
@@ -254,36 +233,56 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
   // Add cross-sell suggestion directly to cart
   const handleAddSuggestionToCart = (suggestion: Suggestion) => {
     const newItem = suggestionToCartItem(suggestion);
-    setCart((prevCart) => mergeItemIntoCart(prevCart, newItem));
+    addToCart(newItem);
   };
 
   // Update item quantity
-  const handleUpdateQuantity = (productId: string, newQty: number) => {
+  const handleUpdateQuantity = async (productId: string, newQty: number) => {
     if (newQty <= 0) {
       handleRemoveItem(productId);
       return;
     }
+    
+    // Optimistic update
     setCart((prev) =>
       prev.map((item) =>
         item.product_id === productId
-          ? {
-              ...item,
-              quantity: newQty,
-              total: newQty * item.unit_price,
-            }
+          ? { ...item, quantity: newQty, total: newQty * item.unit_price }
           : item
       )
     );
+
+    const sessionId = getOrCreateSessionId(mode);
+    if (sessionId) {
+      await fetch("/api/cart/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, product_id: productId, quantity: newQty }),
+      });
+      syncCart();
+    }
   };
 
   // Remove single item
-  const handleRemoveItem = (productId: string) => {
+  const handleRemoveItem = async (productId: string) => {
+    // Optimistic update
     setCart((prev) => prev.filter((item) => item.product_id !== productId));
+    
+    const sessionId = getOrCreateSessionId(mode);
+    if (sessionId) {
+      await fetch("/api/cart/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, product_id: productId }),
+      });
+      syncCart();
+    }
   };
 
   // Clear all items
   const handleClearCart = () => {
     setCart([]);
+    // Optionally clear it on the server if needed
   };
 
   // Reset conversation to mode's clean greeting
@@ -312,12 +311,24 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
   };
 
   // Add single product directly to cart
-  const addToCart = (product: CartItem) => {
+  const addToCart = async (product: CartItem) => {
+    // Optimistic update
     setCart((prevCart) => mergeItemIntoCart(prevCart, product));
+    
+    const sessionId = getOrCreateSessionId(mode);
+    if (sessionId) {
+      await fetch("/api/cart/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, item: product }),
+      });
+      syncCart();
+    }
   };
 
   // Add multiple products directly to cart
-  const addAllToCart = (products: CartItem[]) => {
+  const addAllToCart = async (products: CartItem[]) => {
+    // Optimistic update
     setCart((prevCart) => {
       let updated = [...prevCart];
       products.forEach((p) => {
@@ -325,6 +336,19 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
       });
       return updated;
     });
+
+    const sessionId = getOrCreateSessionId(mode);
+    if (sessionId) {
+      // Add sequentially or bulk add (we'll just iterate for simplicity)
+      for (const p of products) {
+        await fetch("/api/cart/add", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId, item: p }),
+        });
+      }
+      syncCart();
+    }
   };
 
   // WhatsApp in-chat interactive action handlers
