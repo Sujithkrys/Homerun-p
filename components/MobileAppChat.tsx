@@ -211,7 +211,7 @@ export default function MobileAppChat({
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Type material or project estimate..."
             disabled={isLoading}
-            className="flex-1 text-xs sm:text-sm px-2 py-2 bg-transparent focus:outline-hidden font-sans"
+            className="flex-1 text-xs sm:text-sm px-2 py-2 bg-transparent focus:outline-none border-none focus:ring-0 font-sans"
           />
           <button
             type="submit"

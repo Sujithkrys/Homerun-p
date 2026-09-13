@@ -399,12 +399,11 @@ export default function MessageBubble({
             variant="in-app"
           />
         )}
+      </div>
 
-        {/* Timestamp */}
-        <div className="flex items-center justify-between mt-1.5 text-[10.5px] text-slate-400">
-          <div />
-          <span className="ml-auto">{time}</span>
-        </div>
+      {/* Timestamp */}
+      <div className={`mt-1 text-[10px] text-slate-400 font-medium tracking-wide px-1 ${isUser ? "text-right" : "text-left"}`}>
+        {time}
       </div>
     </div>
   );
