@@ -58,7 +58,6 @@ export default function ProductsScreen({
       mrp: 850,
       price: 780,
       bulk_price: null,
-      bulk_threshold: null,
       discount_percentage: 8,
       unit: "pack",
       badges: ["Free Delivery"],

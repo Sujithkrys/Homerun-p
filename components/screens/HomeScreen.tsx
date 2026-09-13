@@ -65,13 +65,15 @@ export default function HomeScreen({
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const query = searchQuery.trim() || ROTATING_SEARCH_TERMS[termIndex];
-    onNavigateToEstimator(`Show me ${query} with prices and stock`);
+    if (searchQuery.trim()) {
+      // Connect to product search/categories instead of AI chat
+      onSelectCategory(searchQuery.trim());
+    }
   };
 
   const handleSelectRelevant = (term: string) => {
-    setSearchQuery(term);
-    onNavigateToEstimator(`Show me ${term} with prices and stock`);
+    // Navigate directly to products for the selected popular term
+    onSelectCategory(term);
   };
 
   return (
