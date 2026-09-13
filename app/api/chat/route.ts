@@ -13,7 +13,7 @@ function getSarvamSystemPrompt(): string {
     .replace(/(\n\s{2,})/g, " ")
     .replace(/:\s+/g, ":")
     .replace(/,\s+/g, ",");
-  return prompt + " IMPORTANT: You MUST always reply in the same language that the user uses to communicate with you. For example, if they speak in Hindi, reply in Hindi. If they speak in English, reply in English.";
+  return prompt;
 }
 
 // ---- SARVAM AI (OpenAI-compatible API) ----
