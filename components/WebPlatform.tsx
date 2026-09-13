@@ -176,6 +176,7 @@ export default function WebPlatform({
             cart={cart}
             cartCount={cartCount}
             onOpenCart={() => setIsSidebarCartOpen(true)}
+            variant="web"
           />
         )}
 

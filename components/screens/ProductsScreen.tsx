@@ -14,6 +14,7 @@ interface ProductsScreenProps {
   cart: CartItem[];
   cartCount: number;
   onOpenCart?: () => void;
+  variant?: "mobile" | "web";
 }
 
 export default function ProductsScreen({
@@ -24,7 +25,9 @@ export default function ProductsScreen({
   cart,
   cartCount,
   onOpenCart,
+  variant = "mobile",
 }: ProductsScreenProps) {
+  const isWeb = variant === "web";
   const [activeFilter, setActiveFilter] = useState<string>("Category");
   const [selectedProduct, setSelectedProduct] = useState<StructuredProduct | null>(null);
 
@@ -53,7 +56,7 @@ export default function ProductsScreen({
   return (
     <div className="w-full h-full flex flex-col bg-[#f5f5f5] overflow-hidden">
       {/* Header */}
-      <div className="bg-[#f5f5f5] px-4 py-3 flex items-center justify-between shrink-0">
+      <div className={`bg-[#f5f5f5] px-4 ${isWeb ? "py-3" : "pt-10 pb-3"} flex items-center justify-between shrink-0`}>
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="p-1 -ml-1 text-slate-800">
             <ChevronLeft className="w-6 h-6" />
