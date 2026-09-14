@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Message, CartItem, Suggestion, SUPPORTED_LANGUAGES } from "@/lib/types";
 import MessageBubble from "../MessageBubble";
-import QuickActions from "../QuickActions";
+import { QUICK_PROMPTS } from "../QuickActions";
 import { VoiceButton } from "../VoiceButton";
 import { useSarvamVoice } from "@/hooks/useSarvamVoice";
 import {
@@ -13,9 +13,9 @@ import {
   Sparkles,
   RefreshCw,
   ChevronDown,
-  ChevronUp,
   Languages,
   Check,
+  X,
 } from "lucide-react";
 import { HomeRunThunder } from "../HomeRunLogo";
 
@@ -35,6 +35,7 @@ interface AIEstimatorScreenProps {
   selectedLanguage?: string | null;
   onSelectLanguage?: (language: string | null) => void;
   awaitingLanguageConfirm?: boolean;
+  sessionEnded?: boolean;
 }
 
 export default function AIEstimatorScreen({
@@ -53,9 +54,10 @@ export default function AIEstimatorScreen({
   selectedLanguage = null,
   onSelectLanguage,
   awaitingLanguageConfirm = false,
+  sessionEnded = false,
 }: AIEstimatorScreenProps) {
   const [inputText, setInputText] = useState(initialInput);
-  const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
+  const [showMorePrompts, setShowMorePrompts] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [isVoiceThinking, setIsVoiceThinking] = useState(false);
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
@@ -76,19 +78,24 @@ export default function AIEstimatorScreen({
   }, [initialInput]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // block: "nearest" keeps this scroll confined to the messages list itself.
+    // Without it, the off-screen (translateY(100%)) bottom sheet still counts
+    // toward this component's scrollable area, and a bare scrollIntoView()
+    // would walk up and scroll the whole screen to "reveal" that phantom
+    // space instead of just the chat log.
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages, transcript, isLoading]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim() || isLoading) return;
+    if (!inputText.trim() || isLoading || sessionEnded) return;
     onSendMessage(inputText.trim());
     setInputText("");
   };
 
   const handleSelectQuickPrompt = (prompt: string) => {
     onSendMessage(prompt);
-    setIsQuickActionsOpen(false);
+    setShowMorePrompts(false);
   };
 
   return (
@@ -148,63 +155,22 @@ export default function AIEstimatorScreen({
         </div>
       )}
 
-      {/* Fix 8: Collapsible "Try asking..." Bar at top of chat area */}
-      <div className="shrink-0 bg-white border-b border-[#eeeeee] z-10 select-none shadow-2xs">
-        <button
-          type="button"
-          onClick={() => setIsQuickActionsOpen((prev) => !prev)}
-          className="w-full h-10 px-3 flex items-center justify-between text-xs font-semibold text-[#333333] hover:bg-[#fafafa] transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-sm shrink-0">💡</span>
-            <span className="text-[#1a1a1a] font-bold truncate">Try asking...</span>
-            <span className="text-[10.5px] text-[#777777] font-normal hidden sm:inline truncate">
-              — Quick estimates for tiling, painting, wiring
-            </span>
-          </div>
-          <div className="flex items-center gap-1 text-[#666666] shrink-0">
-            <span className="text-[10px] font-medium">
-              {isQuickActionsOpen ? "Hide" : "Show"}
-            </span>
-            {isQuickActionsOpen ? (
-              <ChevronUp className="w-4 h-4 text-[#1a7a3a]" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-[#777777]" />
-            )}
-          </div>
-        </button>
-
-        {/* Collapsible Quick Action Pills Container */}
-        <div
-          className={`transition-all duration-200 ease-in-out overflow-hidden ${
-            isQuickActionsOpen ? "max-h-28 opacity-100 py-1.5 px-2 bg-[#f8faf9] border-t border-[#f0f0f0]" : "max-h-0 opacity-0 py-0"
-          }`}
-        >
-          <QuickActions
-            onSelectPrompt={handleSelectQuickPrompt}
-            disabled={isLoading}
-          />
-        </div>
-      </div>
-
       {/* Language Picker Bar */}
-      <div className="relative shrink-0 bg-white border-b border-[#eeeeee] z-10 select-none">
+      <div className="relative shrink-0 bg-[#f7faf8] border-b border-[#eaf2ec] z-20 select-none">
         <button
           type="button"
           onClick={() => setIsLanguageMenuOpen((prev) => !prev)}
-          className={`w-full h-8 px-3 flex items-center justify-between text-[11px] font-semibold transition-colors cursor-pointer ${
-            awaitingLanguageConfirm ? "text-amber-700 bg-amber-50" : "text-[#555555] hover:bg-[#fafafa]"
+          className={`w-full h-9 px-3 flex items-center justify-center gap-1.5 text-[11.5px] font-bold transition-colors cursor-pointer ${
+            awaitingLanguageConfirm ? "text-amber-700 bg-amber-50" : "text-[#1a7a3a] hover:bg-[#eef7f3]"
           }`}
         >
-          <span className="flex items-center gap-1.5">
-            <Languages className="w-3.5 h-3.5" />
-            <span>{selectedLanguage ? `Language: ${selectedLanguage}` : "Change Language"}</span>
-          </span>
+          <Languages className="w-3.5 h-3.5" />
+          <span>{selectedLanguage ? `Language: ${selectedLanguage}` : "Change Language"}</span>
           <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isLanguageMenuOpen ? "rotate-180" : ""}`} />
         </button>
 
         {isLanguageMenuOpen && (
-          <div className="absolute left-0 right-0 top-full bg-white border border-t-0 border-[#eeeeee] shadow-md z-20 py-1">
+          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 w-48 bg-white border border-[#eeeeee] rounded-xl shadow-lg z-20 py-1 overflow-hidden">
             <button
               type="button"
               onClick={() => handlePickLanguage(null)}
@@ -302,37 +268,139 @@ export default function AIEstimatorScreen({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Try Asking Preview (first line + 2 examples + a bar to see more) */}
+      {!sessionEnded && (
+        <div className="px-3 sm:px-4 pt-2 bg-white border-t border-[#f0f0f0] shrink-0">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-homerun-green" />
+            <span className="text-[11px] font-bold text-[#555555]">Try asking</span>
+          </div>
+          <div className="flex items-stretch gap-1.5">
+            {QUICK_PROMPTS.slice(0, 2).map((item, idx) => (
+              <button
+                key={idx}
+                type="button"
+                disabled={isLoading}
+                onClick={() => handleSelectQuickPrompt(item.label)}
+                className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium bg-[#f8faf9] text-slate-700 rounded-lg border border-slate-200 hover:border-homerun-green hover:bg-homerun-green-light/40 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                <span className="shrink-0">{item.icon}</span>
+                <span className="truncate">{item.label}</span>
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowMorePrompts(true)}
+            className="w-full mt-1 flex flex-col items-center gap-0.5 py-1 cursor-pointer group"
+            aria-label="Show more estimate prompts"
+          >
+            <span className="w-9 h-1 rounded-full bg-slate-300 group-hover:bg-homerun-green transition-colors" />
+            <span className="text-[10px] font-semibold text-slate-400 group-hover:text-homerun-green transition-colors">
+              More estimates
+            </span>
+          </button>
+        </div>
+      )}
+
       {/* Chat Input Bar */}
       <div className="p-2.5 sm:p-3 bg-white shrink-0">
-        <div className="flex items-center gap-2">
-          {/* Voice Mic Button */}
-          <VoiceButton callState={callState} onStart={start} onStop={stop} />
+        {sessionEnded ? (
+          <div className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-800">Chat session ended</p>
+              <p className="text-[11px] text-slate-500 truncate">
+                Start a new chat anytime you need materials.
+              </p>
+            </div>
+            {onResetChat && (
+              <button
+                type="button"
+                onClick={onResetChat}
+                className="shrink-0 px-3.5 py-2 rounded-full bg-[#1a7a3a] text-white text-xs font-bold shadow-sm hover:bg-[#145f2d] active:scale-95 transition-all cursor-pointer"
+              >
+                Start New Chat
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            {/* Voice Mic Button */}
+            <VoiceButton callState={callState} onStart={start} onStop={stop} />
 
-          <form 
-            onSubmit={handleSubmit} 
-            className="flex-1 flex items-center gap-2 p-[6px] rounded-[24px] border border-slate-200 bg-white shadow-none"
-          >
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="Type your message..."
-              disabled={isLoading || callState !== "idle"}
-              className="flex-1 text-xs sm:text-sm px-2 py-2 bg-transparent focus:outline-none border-none focus:ring-0 font-sans"
-            />
-            <button
-              type="submit"
-              disabled={!inputText.trim() || isLoading || callState !== "idle"}
-              className={`flex items-center justify-center shrink-0 h-10 w-10 rounded-full transition-all duration-200 ${
-                !inputText.trim() || isLoading || callState !== "idle"
-                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                  : "bg-[#1a7a3a] text-white shadow-sm hover:bg-[#145f2d] active:scale-95 cursor-pointer"
-              }`}
-              aria-label="Send message"
+            <form
+              onSubmit={handleSubmit}
+              className="flex-1 flex items-center gap-2 p-[6px] rounded-[24px] border border-slate-200 bg-white shadow-none"
             >
-              <Send className="w-4 h-4" />
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Type your message..."
+                disabled={isLoading || callState !== "idle"}
+                className="flex-1 text-xs sm:text-sm px-2 py-2 bg-transparent focus:outline-none border-none focus:ring-0 font-sans"
+              />
+              <button
+                type="submit"
+                disabled={!inputText.trim() || isLoading || callState !== "idle"}
+                className={`flex items-center justify-center shrink-0 h-10 w-10 rounded-full transition-all duration-200 ${
+                  !inputText.trim() || isLoading || callState !== "idle"
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                    : "bg-[#1a7a3a] text-white shadow-sm hover:bg-[#145f2d] active:scale-95 cursor-pointer"
+                }`}
+                aria-label="Send message"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+
+      {/* Half-screen "More estimates" Sheet */}
+      <div
+        className={`absolute inset-0 z-40 transition-opacity duration-200 ${
+          showMorePrompts ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+      >
+        <div className="absolute inset-0 bg-black/40" onClick={() => setShowMorePrompts(false)} />
+        <div
+          className={`absolute left-0 right-0 bottom-0 h-1/2 bg-white rounded-t-2xl shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
+            showMorePrompts ? "translate-y-0" : "translate-y-full"
+          }`}
+        >
+          <div className="flex items-center justify-center pt-2.5 pb-1 shrink-0">
+            <span className="w-10 h-1 rounded-full bg-slate-300" />
+          </div>
+          <div className="px-4 pb-2 flex items-center justify-between shrink-0">
+            <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-homerun-green" /> Try asking
+            </h4>
+            <button
+              type="button"
+              onClick={() => setShowMorePrompts(false)}
+              className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
             </button>
-          </form>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+            <div className="flex flex-col gap-2">
+              {QUICK_PROMPTS.map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => handleSelectQuickPrompt(item.label)}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium bg-[#f8faf9] text-slate-700 rounded-xl border border-slate-200 hover:border-homerun-green hover:bg-homerun-green-light/40 transition-all text-left disabled:opacity-50 cursor-pointer"
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
