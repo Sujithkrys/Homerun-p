@@ -237,6 +237,19 @@ export default function MessageBubble({
     : (message.recommended_products || []);
   const cartTotal = itemsToDisplay.reduce((sum, item) => sum + item.total, 0);
 
+  // A product can show up in BOTH recommended_products and cart_items on the
+  // same reply — e.g. "buy 10 bags cement" gets added directly (cart_items,
+  // real quantity 10) while the model also lists it under recommended_products
+  // (which defaults new suggestions to quantity 1). Rendering both left a
+  // "Suggested option" card showing qty 1 for something already added as 10.
+  // Since it's already in the cart, it isn't actually still "recommended" —
+  // drop it from the recommendation list and let the real cart-items card
+  // (with the correct quantity) be the only thing shown for it.
+  const addedProductIds = new Set((message.cart_items || []).map((i) => i.product_id));
+  const pendingRecommended = (message.recommended_products || []).filter(
+    (p) => !addedProductIds.has(p.product_id)
+  );
+
   // ================= WHATSAPP VARIANT =================
   if (variant === "whatsapp") {
     return (
@@ -279,14 +292,14 @@ export default function MessageBubble({
           )}
 
           {/* WhatsApp Formatted Recommended Products List */}
-          {!isUser && message.recommended_products && message.recommended_products.length > 0 && (
+          {!isUser && pendingRecommended.length > 0 && (
             <div className="mt-2.5 pt-2 border-t border-slate-200/80 font-sans text-xs space-y-2">
               <div className="font-bold text-slate-900 text-[13px] flex items-center gap-1.5">
                 <span>📋</span>
                 <strong>Recommended Materials</strong>
               </div>
               <div className="space-y-1.5">
-                {message.recommended_products.map((item, idx) => {
+                {pendingRecommended.map((item, idx) => {
                   const numberEmojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
                   return (
                     <div key={idx} className="bg-slate-50/90 p-2 rounded-md border border-slate-200/60">
@@ -314,7 +327,7 @@ export default function MessageBubble({
                   <strong>Estimated Total:</strong>
                 </span>
                 <strong className="text-[#075e54] font-extrabold text-[13px]">
-                  ₹{message.recommended_products.reduce((s, i) => s + i.total, 0).toLocaleString("en-IN")}
+                  ₹{pendingRecommended.reduce((s, i) => s + i.total, 0).toLocaleString("en-IN")}
                 </strong>
               </div>
               <div className="text-[11px] text-slate-600 flex items-center justify-between font-medium">
@@ -458,9 +471,9 @@ export default function MessageBubble({
         )}
 
         {/* Recommended Products with Selectable Checkboxes (Web & Mobile) */}
-        {!isUser && message.recommended_products && message.recommended_products.length > 0 && (
+        {!isUser && pendingRecommended.length > 0 && (
           <ProductRecommendation
-            products={message.recommended_products}
+            products={pendingRecommended}
             onAddAllToCart={onAddAllToCart || ((items) => items.forEach(p => (onAddToCart ? onAddToCart(p) : onAddSuggestion?.({
               product_id: p.product_id,
               name: p.name,
@@ -473,7 +486,7 @@ export default function MessageBubble({
         )}
 
         {/* Added to Cart Items List (Web & Mobile) */}
-        {!isUser && message.cart_items && message.cart_items.length > 0 && (!message.recommended_products || message.recommended_products.length === 0) && (
+        {!isUser && message.cart_items && message.cart_items.length > 0 && (
           <div className="mt-2.5 p-2.5 sm:p-3 bg-emerald-50/90 border border-emerald-200 rounded-xl space-y-2">
             <div className="flex items-center justify-between border-b border-emerald-200/60 pb-1.5">
               <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900">

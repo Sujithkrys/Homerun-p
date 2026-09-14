@@ -286,8 +286,12 @@ export default function AIEstimatorScreen({
           </>
         )}
 
-        {/* AI Typing Indicator */}
-        {isLoading && (
+        {/* AI Typing Indicator — once the reply starts streaming into its own
+            bubble above, that growing text is already the activity signal;
+            leaving this dot bubble up as well made it look like a second,
+            stray "still typing" indicator floating below a finished reply
+            and its timestamp. Only show it before any reply text exists. */}
+        {isLoading && (messages[messages.length - 1]?.role === "user" || !messages[messages.length - 1]?.content?.trim()) && (
           <div className="flex items-center gap-2 my-2 ml-1">
             <div className="bg-white border border-slate-200 rounded-2xl px-3.5 py-2 flex items-center gap-1.5 shadow-2xs">
               <span className="text-xs text-slate-500 font-medium mr-1">

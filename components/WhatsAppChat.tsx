@@ -536,8 +536,10 @@ https://rzp.io/l/homerun-order
           );
         })}
 
-        {/* Typing indicator bubble */}
-        {isLoading && (
+        {/* Typing indicator bubble — hidden once the reply itself starts
+            streaming into its own bubble above, so it doesn't linger as a
+            stray second "still typing" bubble under a finished reply. */}
+        {isLoading && (latestMessage?.role === "user" || !latestMessage?.content?.trim()) && (
           <div className="flex justify-start my-1.5">
             <div className="bg-white rounded-lg px-3 py-2 wa-bubble-left shadow-xs flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#128c7e] dot-1"></span>
