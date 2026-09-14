@@ -44,14 +44,42 @@ export function suggestionToCartItem(suggestion: Suggestion): CartItem {
   };
 }
 
-export function getInitialGreeting(mode: "web" | "mobile" | "whatsapp" = "web"): Message {
+// Romanized (Latin-script) greeting text per language, matching the
+// romanization-only rule in lib/system-prompt.ts's Language Rules — text
+// chat only, never used by the voice agent.
+const GREETINGS: Record<string, { web: string; whatsapp: string }> = {
+  English: {
+    web: "Hello! I am your **HomeRun Construction Assistant**.\n\nNeed cement, adhesives, paints, or electrical wiring delivered directly to your site in Bangalore? I can calculate estimations or dispatch materials to your doorstep in **60 minutes**.\n\nWhat can I get for you today?",
+    whatsapp: "👋 Welcome to HomeRun!\nBangalore's fastest construction material delivery — 60 mins to your site.\n\nHow can I help you today?",
+  },
+  Hindi: {
+    web: "Namaste! Main aapka **HomeRun Construction Assistant** hoon.\n\nAapko cement, adhesive, paint, ya electrical wiring apni site par Bangalore mein chahiye? Main estimation calculate kar sakta hoon ya materials aapke doorstep tak **60 minute** mein bhej sakta hoon.\n\nAaj aapke liye kya laaun?",
+    whatsapp: "👋 HomeRun mein aapka swagat hai!\nBangalore ki sabse tez construction material delivery — aapki site tak 60 minute mein.\n\nMain aapki kaise madad kar sakta hoon?",
+  },
+  Telugu: {
+    web: "Namaskaram! Nenu mee **HomeRun Construction Assistant**.\n\nMeeku cement, adhesive, paint, leda electrical wiring mee site ki Bangalore lo kavala? Nenu estimation calculate cheyagalanu leda materials mee doorstep ki **60 nimishallo** pampagalanu.\n\nEeroju meeku em kavali?",
+    whatsapp: "👋 HomeRun ki swagatam!\nBangalore lo fastest construction material delivery — mee site ki 60 nimishallo.\n\nNenu meeku ela sahayam cheyagalanu?",
+  },
+  Kannada: {
+    web: "Namaskara! Naanu nimma **HomeRun Construction Assistant**.\n\nNimage cement, adhesive, paint, athava electrical wiring nimma site ge Bangalore nalli beka? Naanu estimation calculate maadabahudu athava materials nimma doorstep ge **60 nimishagalalli** kalisabahudu.\n\nIndu nimage enu beku?",
+    whatsapp: "👋 HomeRun ge swagata!\nBangalore na fastest construction material delivery — nimma site ge 60 nimishagalalli.\n\nNaanu nimage hege sahaya maadabahudu?",
+  },
+  Tamil: {
+    web: "Vanakkam! Naan unga **HomeRun Construction Assistant**.\n\nUngalukku cement, adhesive, paint, allathu electrical wiring unga site kku Bangalore la venuma? Naan estimation calculate pannalam allathu materials unga doorstep kku **60 nimidangalil** anupalam.\n\nIndru ungalukku enna venum?",
+    whatsapp: "👋 HomeRun kku ungalai varaverkirom!\nBangalore-in fastest construction material delivery — unga site kku 60 nimidangalil.\n\nNaan ungalukku eppadi udhavi mudiyum?",
+  },
+};
+
+export function getInitialGreeting(
+  mode: "web" | "mobile" | "whatsapp" = "web",
+  language?: string | null
+): Message {
   const isWhatsApp = mode === "whatsapp";
+  const greetingSet = (language && GREETINGS[language]) || GREETINGS.English;
   return {
     id: `init-${mode}-${Date.now()}`,
     role: "assistant",
-    content: isWhatsApp
-      ? "👋 Welcome to HomeRun!\nBangalore's fastest construction material delivery — 60 mins to your site.\n\nHow can I help you today?"
-      : "Hello! I am your **HomeRun Construction Assistant**.\n\nNeed cement, adhesives, paints, or electrical wiring delivered directly to your site in Bangalore? I can calculate estimations or dispatch materials to your doorstep in **60 minutes**.\n\nWhat can I get for you today?",
+    content: isWhatsApp ? greetingSet.whatsapp : greetingSet.web,
     // Left blank on purpose: computing the live time here would run once during
     // server rendering and again during client hydration, producing two
     // different strings and a React hydration mismatch. MessageBubble falls
@@ -583,6 +611,17 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
   const handleSelectLanguage = (language: string | null) => {
     setSelectedLanguage(language);
     setAwaitingLanguageConfirm(false);
+
+    // Text-chat only (never the voice agent): if the user picks a language
+    // before actually chatting, swap the still-showing initial greeting for
+    // its localized version so the very first thing they read matches their
+    // choice. Once a real conversation is underway, leave existing messages
+    // alone — only affects the untouched init greeting.
+    setMessages((prev) =>
+      prev.length === 1 && prev[0].id.startsWith(`init-${mode}`)
+        ? [{ ...prev[0], content: getInitialGreeting(mode, language).content }]
+        : prev
+    );
   };
 
   // Place order
