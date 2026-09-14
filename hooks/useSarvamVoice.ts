@@ -43,11 +43,10 @@ export function useSarvamVoice(mode: string = "default", preferredLanguage?: str
       user_identifier: sessionId,
       input_sample_rate: 16000 as const,
       output_sample_rate: 16000 as const,
+      ...(preferredLanguage ? { initial_language_name: preferredLanguage } : {}),
       agent_variables: {
         user_identifier: sessionId,
-        // Read by the Sarvam agent template to pick which language it
-        // speaks/listens in. Omitted (falls back to the agent's own
-        // default/auto-detect) when the user hasn't picked one.
+        // Kept for fallback/prompt injection if the template reads it
         ...(preferredLanguage ? { preferred_language: preferredLanguage } : {}),
       }
     };
@@ -73,6 +72,25 @@ export function useSarvamVoice(mode: string = "default", preferredLanguage?: str
               timestamp: event.timestamp
             }];
           });
+        }
+      },
+      // Diagnostic only — not currently rendered anywhere. The SDK's own
+      // type for "server.action.interaction_connected" (ServerInteractionConnectedEvent)
+      // echoes back whatever CustomAppOverrides the server actually received
+      // and accepted, including initial_language_name. That's the one place
+      // we can directly confirm — instead of guessing — whether our
+      // preferredLanguage value ever reaches Sarvam's agent, as opposed to
+      // being silently dropped or ignored by the specific agent template
+      // behind app_id. server.event.language_change is also logged in full
+      // (its payload isn't typed in this SDK version, so this is the only
+      // way to see what fields it actually carries at runtime).
+      eventCallback: async (event: any) => {
+        if (event.type === "server.action.interaction_connected") {
+          console.log("[useSarvamVoice] interaction_connected — server-acknowledged config:", JSON.stringify(event));
+        } else if (event.type === "server.event.language_change") {
+          console.log("[useSarvamVoice] language_change event:", JSON.stringify(event));
+        } else {
+          console.log("[useSarvamVoice] event:", event.type, JSON.stringify(event));
         }
       },
       stateCallback: (newState: AgentState) => {
