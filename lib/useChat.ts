@@ -246,6 +246,16 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
     const wasAwaitingConfirm = awaitingLanguageConfirm;
     const lockedLanguageToSend = wasAwaitingConfirm ? null : selectedLanguage;
 
+    // Declared outside the try block (not just inside it) so the catch
+    // block below can see whether a reply had already started streaming —
+    // the server can return 200 and stream real content, then have the
+    // connection drop partway through (slow/flaky network) while still
+    // reading the trailing metadata. Without this, that failure appended a
+    // whole separate "could not connect" bubble under an otherwise-complete,
+    // good-looking reply instead of just quietly finishing it.
+    let assistantMessageId: string | null = null;
+    let currentText = "";
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -276,13 +286,13 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
       let textBuffer = "";
       let isJsonMode = false;
       let jsonBuffer = "";
-      let currentText = "";
 
-      const assistantMessageId = `asst-${Date.now()}`;
+      const msgId = `asst-${Date.now()}`;
+      assistantMessageId = msgId;
       setMessages((prev) => [
         ...prev,
         {
-          id: assistantMessageId,
+          id: msgId,
           role: "assistant",
           content: "",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -304,7 +314,7 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
               jsonBuffer = textBuffer.slice(splitIdx + "---JSON_START---".length);
               
               setMessages((prev) => prev.map((msg) => 
-                msg.id === assistantMessageId ? { ...msg, content: currentText } : msg
+                msg.id === msgId ? { ...msg, content: currentText } : msg
               ));
             } else {
               // Safe append: hold back 16 chars in case they are part of "---JSON_START---"
@@ -314,7 +324,7 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
                 textBuffer = textBuffer.slice(textBuffer.length - 16);
                 
                 setMessages((prev) => prev.map((msg) => 
-                  msg.id === assistantMessageId ? { ...msg, content: currentText } : msg
+                  msg.id === msgId ? { ...msg, content: currentText } : msg
                 ));
               }
             }
@@ -326,8 +336,8 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
 
       if (!isJsonMode && textBuffer.length > 0) {
         currentText += textBuffer;
-        setMessages((prev) => prev.map((msg) => 
-          msg.id === assistantMessageId ? { ...msg, content: currentText } : msg
+        setMessages((prev) => prev.map((msg) =>
+          msg.id === msgId ? { ...msg, content: currentText } : msg
         ));
       }
 
@@ -364,7 +374,7 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
 
       // Update the final assistant message with all metadata
       setMessages((prev) => prev.map((msg) => {
-        if (msg.id === assistantMessageId) {
+        if (msg.id === msgId) {
           return {
             ...msg,
             recommended_products: data.recommended_products || [],
@@ -387,14 +397,32 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
         scheduleInactivityClose();
       }
       // Since it's async and state updates might lag, we can just return what we have (not used by much)
-      return { id: assistantMessageId, role: "assistant", content: currentText };
+      return { id: msgId, role: "assistant", content: currentText };
     } catch (err) {
       console.error("Chat fetch error:", err);
+
+      // The server can return 200 and stream a real, complete-looking reply,
+      // then have the connection drop while still reading the trailing
+      // metadata (slow/flaky network) — reader.read() throws at that point
+      // even though the user already has a perfectly good answer on screen.
+      // Bolting on a whole separate "could not connect" bubble under it read
+      // as if something else had gone wrong. If real text already made it
+      // through, just quietly finish that message instead.
+      if (assistantMessageId && currentText.trim().length > 0) {
+        const finishedId = assistantMessageId;
+        setMessages((prev) => prev.map((msg) =>
+          msg.id === finishedId
+            ? { ...msg, recommended_products: msg.recommended_products || [], cart_items: msg.cart_items || [] }
+            : msg
+        ));
+        scheduleInactivityClose();
+        return { id: finishedId, role: "assistant", content: currentText };
+      }
+
       const errorMessage: Message = {
         id: `err-${Date.now()}`,
         role: "assistant",
-        content:
-          "⚠️ Could not connect to the server. Check that the dev server is running (npm run dev) or that the Vercel deployment is active.",
+        content: "⚠️ Connection interrupted before I could reply. Please check your network and try again.",
         timestamp: currentTime,
       };
       setMessages((prev) => [...prev, errorMessage]);

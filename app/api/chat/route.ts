@@ -183,19 +183,14 @@ function extractRecommendedProductsFromText(messageText: string) {
 
   for (const product of PRODUCT_CATALOG) {
     const pName = product.name.toLowerCase();
-    const hasBrand = lowerMsg.includes(product.brand.toLowerCase());
-    const hasPrice = lowerMsg.includes(product.price.toString());
-    const hasExactName = lowerMsg.includes(pName);
-
-    // Some products might share a brand (e.g. UltraTech PPC and UltraTech OPC).
-    // If we only match on brand + price, we might get false positives if prices match.
-    // But within a single brand, prices are rarely identical.
-    // To be safe, if we use brand+price, we should also check if a key identifier is present.
-    // A simpler approach: if hasExactName, definitely add.
-    // If hasBrand and hasPrice, definitely add.
     
-    if (hasExactName || (hasBrand && hasPrice)) {
-      // Prevent duplicates if multiple conditions match
+    // Remove common generic words and normalize spacing to create a distinctive core phrase
+    const coreName = pName
+      .replace(/\b(cement|adani|bag|bags|the|for|with)\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    if (coreName.length > 3 && lowerMsg.includes(coreName)) {
       if (!recommended.find(r => r.product_id === product.id)) {
         recommended.push({
           product_id: product.id,
