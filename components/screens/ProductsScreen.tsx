@@ -57,10 +57,11 @@ export default function ProductsScreen({
       image: "",
       mrp: 850,
       price: 780,
-      bulk_price: null,
+      bulk_price: 700,
+      bulk_threshold: 100,
       discount_percentage: 8,
       unit: "pack",
-      badges: ["Free Delivery"],
+      badges: ["Assured 2% Cashback", "Free Delivery"],
     },
     {
       id: `dummy-${categoryName.toLowerCase().replace(/\s+/g, '-')}-3`,
@@ -74,7 +75,7 @@ export default function ProductsScreen({
       bulk_threshold: 50,
       discount_percentage: 9,
       unit: "pallet",
-      badges: [],
+      badges: ["Assured 2% Cashback", "Free Delivery"],
     }
   ];
 
