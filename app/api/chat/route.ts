@@ -63,7 +63,12 @@ async function callSarvam(message: string, history: any[], channel?: string, det
       messages: messages,
       response_format: { type: "json_object" },
       temperature: 0.6,
-      max_tokens: 1024,
+      max_tokens: 4096,
+      // Guards against occasional repetition loops where the model gets stuck
+      // re-emitting the same phrase until it hits max_tokens without ever
+      // closing valid JSON.
+      frequency_penalty: 0.4,
+      presence_penalty: 0.3,
     }),
   });
 
@@ -91,6 +96,9 @@ async function callGemini(message: string, history: any[], channel?: string, det
     systemInstruction: finalPrompt,
     generationConfig: {
       responseMimeType: "application/json",
+      maxOutputTokens: 4096,
+      frequencyPenalty: 0.4,
+      presencePenalty: 0.3,
     },
   });
 
@@ -175,8 +183,8 @@ export async function POST(req: Request) {
 
     // Parse JSON from response (both providers might wrap in ```json blocks)
     let parsed;
+    let jsonStr = responseText;
     try {
-      let jsonStr = responseText;
       if (jsonStr.includes("```json")) {
         jsonStr = jsonStr.split("```json")[1].split("```")[0].trim();
       } else if (jsonStr.includes("```")) {
@@ -184,9 +192,20 @@ export async function POST(req: Request) {
       }
       parsed = JSON.parse(jsonStr);
     } catch {
-      console.warn(`[${provider.toUpperCase()}] Failed to parse JSON, using raw text`);
+      console.warn(`[${provider.toUpperCase()}] Failed to parse JSON (likely truncated), attempting recovery`);
+      // The JSON is usually cut off mid-array (e.g. a long recommended_products
+      // list overran max_tokens) rather than mid-"message" — "message" comes
+      // first in the schema, so try to salvage just that field via regex
+      // rather than ever showing the user raw/truncated JSON.
+      let recoveredMessage: string | null = null;
+      try {
+        const match = jsonStr.match(/"message"\s*:\s*"((?:\\.|[^"\\])*)"/);
+        if (match) recoveredMessage = JSON.parse(`"${match[1]}"`);
+      } catch {}
       parsed = {
-        message: responseText,
+        message:
+          recoveredMessage ||
+          "Sorry, that request generated too large a response for me to complete. Could you narrow it down — e.g. one room or one category at a time?",
         recommended_products: [],
         cart_items: [],
         estimation_summary: null,
