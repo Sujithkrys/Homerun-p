@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { redis } from "@/lib/redis";
+import redis from "@/lib/redis";
 import { CartItem } from "@/lib/types";
 
 export async function POST(req: Request) {
