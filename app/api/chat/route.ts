@@ -1,6 +1,7 @@
 import { SYSTEM_PROMPT, WHATSAPP_BEHAVIOR } from "@/lib/system-prompt";
 import { detectLanguage } from "@/lib/language-detector";
 import { SUPPORTED_LANGUAGES } from "@/lib/types";
+import { PRODUCT_CATALOG } from "@/lib/catalog";
 import { NextRequest } from "next/server";
 
 export const runtime = "edge";
@@ -175,6 +176,43 @@ function extractFirstJsonObject(str: string): string | null {
   return null;
 }
 
+// Extract recommended products from message text
+function extractRecommendedProductsFromText(messageText: string) {
+  const recommended: any[] = [];
+  const lowerMsg = messageText.toLowerCase();
+
+  for (const product of PRODUCT_CATALOG) {
+    const pName = product.name.toLowerCase();
+    const hasBrand = lowerMsg.includes(product.brand.toLowerCase());
+    const hasPrice = lowerMsg.includes(product.price.toString());
+    const hasExactName = lowerMsg.includes(pName);
+
+    // Some products might share a brand (e.g. UltraTech PPC and UltraTech OPC).
+    // If we only match on brand + price, we might get false positives if prices match.
+    // But within a single brand, prices are rarely identical.
+    // To be safe, if we use brand+price, we should also check if a key identifier is present.
+    // A simpler approach: if hasExactName, definitely add.
+    // If hasBrand and hasPrice, definitely add.
+    
+    if (hasExactName || (hasBrand && hasPrice)) {
+      // Prevent duplicates if multiple conditions match
+      if (!recommended.find(r => r.product_id === product.id)) {
+        recommended.push({
+          product_id: product.id,
+          name: product.name,
+          quantity: 1, // Default quantity for display
+          unit: product.unit,
+          unit_price: product.price,
+          total: product.price,
+          reason: "Suggested option"
+        });
+      }
+    }
+  }
+
+  return recommended;
+}
+
 // Validate cart items
 function validateCartItems(parsed: any, history: any[], message: string) {
   if (Array.isArray(parsed.cart_items) && parsed.cart_items.length > 0) {
@@ -255,20 +293,49 @@ export async function POST(req: NextRequest) {
     let rawStream: ReadableStream<Uint8Array>;
     if (provider === "sarvam") {
       // Sarvam returns SSE. We need to extract the text from the SSE chunks.
+      //
+      // Network chunk boundaries almost never line up with SSE "line"
+      // boundaries — a `data: {...}\n` frame routinely arrives split across
+      // two (or more) separate chunk() calls. The previous version decoded
+      // and split('\n') each chunk in total isolation, so a line broken mid-
+      // chunk produced two unparsable fragments (fails JSON.parse, silently
+      // caught) and BOTH halves of that piece of text were dropped — visible
+      // as blank or truncated replies, and worse under real network
+      // conditions than in same-machine curl testing where a short response
+      // often arrives as a single chunk. A persistent decoder (with
+      // {stream:true}, so multi-byte UTF-8 — ₹, bullets, native scripts —
+      // isn't corrupted either) plus a carried-over partial-line buffer
+      // fixes this: only complete lines are ever parsed.
       const sseStream = await callSarvamStream(message, history || [], channel, effectiveLangDirective);
+      const sseDecoder = new TextDecoder();
+      let sseLineBuffer = "";
+
+      const processSseLine = (line: string, controller: TransformStreamDefaultController<Uint8Array>) => {
+        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          try {
+            const data = JSON.parse(line.slice(6));
+            const content = data.choices[0]?.delta?.content;
+            if (content) controller.enqueue(new TextEncoder().encode(content));
+          } catch (e) {
+            console.warn("[SARVAM] Dropped unparsable SSE line:", line.slice(0, 120));
+          }
+        }
+      };
+
       rawStream = sseStream.pipeThrough(new TransformStream({
         transform(chunk, controller) {
-          const text = new TextDecoder().decode(chunk);
-          const lines = text.split('\n');
+          sseLineBuffer += sseDecoder.decode(chunk, { stream: true });
+          const lines = sseLineBuffer.split('\n');
+          // The last entry may be a partial line cut off mid-chunk — hold it
+          // back and prepend it to whatever arrives next instead of parsing it now.
+          sseLineBuffer = lines.pop() ?? "";
           for (const line of lines) {
-            if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-              try {
-                const data = JSON.parse(line.slice(6));
-                const content = data.choices[0]?.delta?.content;
-                if (content) controller.enqueue(new TextEncoder().encode(content));
-              } catch (e) {}
-            }
+            processSseLine(line, controller);
           }
+        },
+        flush(controller) {
+          sseLineBuffer += sseDecoder.decode();
+          if (sseLineBuffer) processSseLine(sseLineBuffer, controller);
         }
       }));
     } else {
@@ -279,6 +346,7 @@ export async function POST(req: NextRequest) {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     let buffer = "";
+    let fullText = "";
     let isJsonMode = false;
     let jsonBuffer = "";
 
@@ -286,6 +354,7 @@ export async function POST(req: NextRequest) {
       transform(chunk, controller) {
         const text = decoder.decode(chunk, { stream: true });
         buffer += text;
+        if (!isJsonMode) fullText += text;
 
         if (!isJsonMode) {
           const splitIdx = buffer.indexOf("---JSON_START---");
@@ -324,13 +393,21 @@ export async function POST(req: NextRequest) {
         if (isJsonMode && jsonBuffer.trim().length > 0) {
           let parsed;
           let jsonStr = jsonBuffer;
-          if (jsonStr.includes("\`\`\`json")) {
-            jsonStr = jsonStr.split("\`\`\`json")[1].split("\`\`\`")[0].trim();
-          } else if (jsonStr.includes("\`\`\`")) {
-            jsonStr = jsonStr.split("\`\`\`")[1].split("\`\`\`")[0].trim();
+          // First try to just extract a JSON object directly since that's safest
+          const extracted = extractFirstJsonObject(jsonStr);
+          if (extracted) {
+             jsonStr = extracted;
+          } else {
+             // Fallback to stripping markdown if extractFirstJsonObject failed
+             if (jsonStr.includes("```json")) {
+               jsonStr = jsonStr.split("```json")[1].split("```")[0].trim();
+             } else if (jsonStr.includes("```")) {
+               const parts = jsonStr.split("```");
+               jsonStr = parts.length > 1 ? parts[1].trim() : parts[0].trim();
+             }
           }
           try {
-            parsed = JSON.parse(extractFirstJsonObject(jsonStr) ?? jsonStr);
+            parsed = JSON.parse(jsonStr);
           } catch {
             console.warn(`Failed to parse JSON buffer, yielding raw buffer as fallback`);
             controller.enqueue(encoder.encode(jsonBuffer));
@@ -338,6 +415,13 @@ export async function POST(req: NextRequest) {
           }
 
           parsed = validateCartItems(parsed, history || [], message);
+          
+          // --- NEW RULE: Enforce deterministic recommended_products ---
+          // Always compute recommended_products directly from the assistant's message text
+          // to completely sidestep the LLM's unreliability in returning the JSON array.
+          const splitIdx = fullText.indexOf("---JSON_START---");
+          const msgText = splitIdx !== -1 ? fullText.slice(0, splitIdx) : fullText;
+          parsed.recommended_products = extractRecommendedProductsFromText(msgText);
           
           // Emit the validated JSON string
           controller.enqueue(encoder.encode(JSON.stringify(parsed)));
