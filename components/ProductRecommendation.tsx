@@ -6,13 +6,11 @@ import { Check, Minus, Plus, ShoppingCart } from "lucide-react";
 
 interface ProductRecommendationProps {
   products: CartItem[];
-  onAddToCart: (product: CartItem) => void;
   onAddAllToCart: (products: CartItem[]) => void;
 }
 
 export default function ProductRecommendation({
   products,
-  onAddToCart,
   onAddAllToCart,
 }: ProductRecommendationProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(products.map((p) => p.product_id)));
@@ -48,7 +46,10 @@ export default function ProductRecommendation({
   const addSelected = () => {
     const selectedItems = products.filter((p) => selectedIds.has(p.product_id)).map(withCurrentQuantity);
     if (selectedItems.length === 0) return;
-    selectedItems.forEach((p) => onAddToCart(p));
+    // Always go through onAddAllToCart, even for a single item — it fires one
+    // combined chat confirmation instead of one per item when several are
+    // selected.
+    onAddAllToCart(selectedItems);
     setAddedMessage(`Added ${selectedItems.length} item${selectedItems.length > 1 ? "s" : ""} to cart!`);
     setTimeout(() => setAddedMessage(null), 3000);
   };

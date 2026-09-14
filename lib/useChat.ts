@@ -232,6 +232,7 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
           timestamp: currentTime,
         };
         setMessages((prev) => [...prev, userMessage, removeReply]);
+        scheduleInactivityClose();
         return removeReply;
       }
     }
@@ -256,25 +257,96 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
         }),
       });
 
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+
+      // The model occasionally skips its trailing ---JSON_START--- metadata
+      // block on short replies, which would otherwise silently drop
+      // detected_language along with everything else in it. The server
+      // already knows the language it used for this turn regardless, so it
+      // echoes it here — trust this over the (possibly-missing) JSON field.
+      const headerDetectedLanguage = response.headers.get("X-Detected-Language");
+
+      if (!response.body) throw new Error("No readable stream");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let textBuffer = "";
+      let isJsonMode = false;
+      let jsonBuffer = "";
+      let currentText = "";
+
+      const assistantMessageId = `asst-${Date.now()}`;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMessageId,
+          role: "assistant",
+          content: "",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        }
+      ]);
+
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          
+          if (!isJsonMode) {
+            textBuffer += chunk;
+            const splitIdx = textBuffer.indexOf("---JSON_START---");
+            if (splitIdx !== -1) {
+              isJsonMode = true;
+              currentText += textBuffer.slice(0, splitIdx);
+              jsonBuffer = textBuffer.slice(splitIdx + "---JSON_START---".length);
+              
+              setMessages((prev) => prev.map((msg) => 
+                msg.id === assistantMessageId ? { ...msg, content: currentText } : msg
+              ));
+            } else {
+              // Safe append: hold back 16 chars in case they are part of "---JSON_START---"
+              if (textBuffer.length > 16) {
+                const safeText = textBuffer.slice(0, textBuffer.length - 16);
+                currentText += safeText;
+                textBuffer = textBuffer.slice(textBuffer.length - 16);
+                
+                setMessages((prev) => prev.map((msg) => 
+                  msg.id === assistantMessageId ? { ...msg, content: currentText } : msg
+                ));
+              }
+            }
+          } else {
+            jsonBuffer += chunk;
+          }
+        }
+      }
+
+      if (!isJsonMode && textBuffer.length > 0) {
+        currentText += textBuffer;
+        setMessages((prev) => prev.map((msg) => 
+          msg.id === assistantMessageId ? { ...msg, content: currentText } : msg
+        ));
+      }
+
       let data: any = {};
-      try {
-        data = await response.json();
-      } catch (jsonErr) {
-        console.error("Failed to parse JSON response:", jsonErr);
+      if (isJsonMode && jsonBuffer.trim().length > 0) {
+        try {
+          data = JSON.parse(jsonBuffer);
+        } catch (jsonErr) {
+          console.error("Failed to parse final JSON block:", jsonErr);
+        }
       }
 
       if (data.language_mismatch) {
         setAwaitingLanguageConfirm(true);
       } else if (wasAwaitingConfirm) {
-        // Resolve the pending confirmation: whatever language they just
-        // replied in becomes the new locked language. If it couldn't be
-        // detected either, fall back to plain auto-detect rather than
-        // leaving the user stuck.
-        setSelectedLanguage(data.detected_language || null);
+        setSelectedLanguage(headerDetectedLanguage || data.detected_language || null);
         setAwaitingLanguageConfirm(false);
       }
 
-      // Add to Cart State: Merge new items
       if (data.cart_items && data.cart_items.length > 0) {
         setCart((prevCart) => {
           let updated = [...prevCart];
@@ -283,27 +355,39 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
           });
           return updated;
         });
+        // Without this, the item only ever existed in local React state —
+        // the next background cart sync (every 3s) would silently wipe it
+        // back out, leaving the cart empty even though the AI's message
+        // said it was added.
+        persistCartItems(data.cart_items);
       }
 
-      // Append assistant response
-      const assistantMessage: Message = {
-        id: `asst-${Date.now()}`,
-        role: "assistant",
-        content: data.message || "Sorry, I couldn't process that. Please try again.",
-        recommended_products: data.recommended_products || [],
-        cart_items: data.cart_items || [],
-        estimation_summary: data.estimation_summary || null,
-        project_estimate: data.project_estimate || null,
-        suggestions: data.suggestions || [],
-        language_mismatch: data.language_mismatch || false,
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
+      // Update the final assistant message with all metadata
+      setMessages((prev) => prev.map((msg) => {
+        if (msg.id === assistantMessageId) {
+          return {
+            ...msg,
+            recommended_products: data.recommended_products || [],
+            cart_items: data.cart_items || [],
+            estimation_summary: data.estimation_summary || null,
+            project_estimate: data.project_estimate || null,
+            suggestions: data.suggestions || [],
+            language_mismatch: data.language_mismatch || false,
+          };
+        }
+        return msg;
+      }));
 
-      setMessages((prev) => [...prev, assistantMessage]);
-      return assistantMessage;
+      // A distinct, guaranteed "anything else?" follow-up — separate from
+      // whatever the AI itself phrased inline — right when items land in
+      // the cart, so the conversation visibly stays open.
+      if (data.cart_items && data.cart_items.length > 0) {
+        pushAddedToCartMessage(data.cart_items);
+      } else {
+        scheduleInactivityClose();
+      }
+      // Since it's async and state updates might lag, we can just return what we have (not used by much)
+      return { id: assistantMessageId, role: "assistant", content: currentText };
     } catch (err) {
       console.error("Chat fetch error:", err);
       const errorMessage: Message = {
@@ -314,10 +398,55 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
         timestamp: currentTime,
       };
       setMessages((prev) => [...prev, errorMessage]);
+      scheduleInactivityClose();
       return errorMessage;
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Persists items to the server-side (Redis) cart so the background
+  // syncCart poll (every 3s) doesn't clobber an optimistic local update with
+  // a stale server cart that never learned about them.
+  const persistCartItems = async (items: CartItem[]) => {
+    const sessionId = getOrCreateSessionId(mode);
+    if (!sessionId) return;
+    for (const item of items) {
+      await fetch("/api/cart/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, item }),
+      });
+    }
+    syncCart();
+  };
+
+  // Appends a deterministic assistant confirmation whenever items are added
+  // to the cart from a UI button (quantity stepper, "Add All", suggestion
+  // chip) rather than through the chat API — those flows never otherwise
+  // produce a chat message, so the conversation would go silent right when
+  // the user needs a prompt to keep going or check out.
+  const pushAddedToCartMessage = (items: CartItem[]) => {
+    if (items.length === 0) return;
+    resumeSession();
+    const currentTime = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const content =
+      items.length === 1
+        ? `✅ Added **${items[0].name}** (${items[0].quantity} ${items[0].unit}) to your cart! Would you like anything else, or are you ready to checkout?`
+        : `✅ Added ${items.length} items to your cart! Would you like anything else, or are you ready to checkout?`;
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `asst-cart-${Date.now()}`,
+        role: "assistant",
+        content,
+        timestamp: currentTime,
+      },
+    ]);
+    scheduleInactivityClose();
   };
 
   // Add cross-sell suggestion directly to cart
@@ -380,6 +509,8 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
     setMessages([getInitialGreeting(mode)]);
     setSelectedLanguage(null);
     setAwaitingLanguageConfirm(false);
+    clearInactivityTimer();
+    setSessionEnded(false);
   };
 
   // Explicit pick from the language button's menu — always resolves any
@@ -406,6 +537,22 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
     setDemoOrder(newOrder);
     setCart([]);
     setUnloadingService(false);
+
+    // The user completed the purchase without needing to reply again —
+    // that's a natural end to the session, so close it rather than leaving
+    // it waiting on a reply that will never come.
+    clearInactivityTimer();
+    setSessionEnded(true);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `asst-order-placed-${Date.now()}`,
+        role: "assistant",
+        content: `🎉 Order placed! Your materials are on the way — this chat session is now complete. Start a new chat anytime for your next order.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+    ]);
+
     if (onSuccess) onSuccess();
   };
 
@@ -413,16 +560,8 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
   const addToCart = async (product: CartItem) => {
     // Optimistic update
     setCart((prevCart) => mergeItemIntoCart(prevCart, product));
-    
-    const sessionId = getOrCreateSessionId(mode);
-    if (sessionId) {
-      await fetch("/api/cart/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, item: product }),
-      });
-      syncCart();
-    }
+    pushAddedToCartMessage([product]);
+    await persistCartItems([product]);
   };
 
   // Add multiple products directly to cart
@@ -435,19 +574,8 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
       });
       return updated;
     });
-
-    const sessionId = getOrCreateSessionId(mode);
-    if (sessionId) {
-      // Add sequentially or bulk add (we'll just iterate for simplicity)
-      for (const p of products) {
-        await fetch("/api/cart/add", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_id: sessionId, item: p }),
-        });
-      }
-      syncCart();
-    }
+    pushAddedToCartMessage(products);
+    await persistCartItems(products);
   };
 
   // WhatsApp in-chat interactive action handlers
@@ -531,6 +659,7 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
     setDemoOrder,
     bill,
     totalCartCount,
+    sessionEnded,
     selectedLanguage,
     awaitingLanguageConfirm,
     handleSelectLanguage,

@@ -455,14 +455,6 @@ https://rzp.io/l/homerun-order
                     <span>❓</span>
                     <span>Ask a Question</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowLanguageMenu(true)}
-                    className="w-full bg-white hover:bg-slate-50 border border-slate-200/90 rounded-lg py-2 px-3 text-xs font-bold text-[#075e54] flex items-center justify-center gap-2 shadow-2xs cursor-pointer transition-all active:scale-98"
-                  >
-                    <span>🌐</span>
-                    <span>Change Language</span>
-                  </button>
                 </div>
               )}
 

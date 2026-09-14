@@ -207,28 +207,16 @@ export default function AIEstimatorScreen({
           </div>
         ) : (
           <>
-            {messages.map((msg, index) => (
-              <React.Fragment key={msg.id}>
-                <MessageBubble
-                  message={msg}
-                  variant="in-app"
-                  allCartItems={cart}
-                  onAddSuggestion={onAddSuggestion}
-                  onAddToCart={onAddToCart}
-                  onAddAllToCart={onAddAllToCart}
-                />
-                {/* Nudge to pick a language, shown right under the welcome message */}
-                {index === 0 && messages.length === 1 && msg.role === "assistant" && !selectedLanguage && (
-                  <button
-                    type="button"
-                    onClick={() => setIsLanguageMenuOpen(true)}
-                    className="flex items-center gap-1.5 text-[11px] font-bold text-[#1a7a3a] bg-[#eef7f3] hover:bg-[#e0f0e8] border border-[#1a7a3a]/20 rounded-full px-3 py-1.5 ml-1 w-fit transition-colors cursor-pointer animate-fadeIn"
-                  >
-                    <Languages className="w-3.5 h-3.5" />
-                    <span>Change Language</span>
-                  </button>
-                )}
-              </React.Fragment>
+            {messages.map((msg) => (
+              <MessageBubble
+                key={msg.id}
+                message={msg}
+                variant="in-app"
+                allCartItems={cart}
+                onAddSuggestion={onAddSuggestion}
+                onAddToCart={onAddToCart}
+                onAddAllToCart={onAddAllToCart}
+              />
             ))}
             {transcript.map((entry) => (
               <MessageBubble

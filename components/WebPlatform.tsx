@@ -60,6 +60,7 @@ interface WebPlatformProps {
   selectedLanguage?: string | null;
   onSelectLanguage?: (language: string | null) => void;
   awaitingLanguageConfirm?: boolean;
+  sessionEnded?: boolean;
 }
 
 export default function WebPlatform({
@@ -88,6 +89,7 @@ export default function WebPlatform({
   selectedLanguage,
   onSelectLanguage,
   awaitingLanguageConfirm,
+  sessionEnded,
 }: WebPlatformProps) {
   const [isSidebarCartOpen, setIsSidebarCartOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -256,6 +258,7 @@ export default function WebPlatform({
                   selectedLanguage={selectedLanguage}
                   onSelectLanguage={onSelectLanguage}
                   awaitingLanguageConfirm={awaitingLanguageConfirm}
+                  sessionEnded={sessionEnded}
                 />
               </div>
             </div>

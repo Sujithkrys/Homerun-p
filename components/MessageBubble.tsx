@@ -322,14 +322,6 @@ export default function MessageBubble({
         {!isUser && message.recommended_products && message.recommended_products.length > 0 && (
           <ProductRecommendation
             products={message.recommended_products}
-            onAddToCart={onAddToCart || ((p) => onAddSuggestion?.({
-              product_id: p.product_id,
-              name: p.name,
-              reason: p.reason || "",
-              estimated_qty: p.quantity,
-              unit: p.unit,
-              unit_price: p.unit_price,
-            }))}
             onAddAllToCart={onAddAllToCart || ((items) => items.forEach(p => (onAddToCart ? onAddToCart(p) : onAddSuggestion?.({
               product_id: p.product_id,
               name: p.name,

@@ -11,7 +11,7 @@ export interface QuickPrompt {
 
 export const QUICK_PROMPTS: QuickPrompt[] = [
   {
-    label: "10 bags UltraTech PPC cement",
+    label: "Buy 10 bags UltraTech PPC cement",
     icon: <Package className="w-3.5 h-3.5 text-amber-600" />,
     category: "Cement",
   },

@@ -37,6 +37,7 @@ interface MobileAppProps {
   selectedLanguage?: string | null;
   onSelectLanguage?: (language: string | null) => void;
   awaitingLanguageConfirm?: boolean;
+  sessionEnded?: boolean;
 }
 
 export default function MobileApp({
@@ -65,6 +66,7 @@ export default function MobileApp({
   selectedLanguage,
   onSelectLanguage,
   awaitingLanguageConfirm,
+  sessionEnded,
 }: MobileAppProps) {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
@@ -117,6 +119,7 @@ export default function MobileApp({
             selectedLanguage={selectedLanguage}
             onSelectLanguage={onSelectLanguage}
             awaitingLanguageConfirm={awaitingLanguageConfirm}
+            sessionEnded={sessionEnded}
           />
         )}
 

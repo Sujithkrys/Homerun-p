@@ -99,6 +99,7 @@ export default function HomePage() {
               selectedLanguage={webChat.selectedLanguage}
               onSelectLanguage={webChat.handleSelectLanguage}
               awaitingLanguageConfirm={webChat.awaitingLanguageConfirm}
+              sessionEnded={webChat.sessionEnded}
             />
           </div>
         )}
@@ -131,6 +132,7 @@ export default function HomePage() {
               selectedLanguage={mobileChat.selectedLanguage}
               onSelectLanguage={mobileChat.handleSelectLanguage}
               awaitingLanguageConfirm={mobileChat.awaitingLanguageConfirm}
+              sessionEnded={mobileChat.sessionEnded}
             />
           </PhoneFrame>
         )}
