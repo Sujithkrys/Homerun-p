@@ -238,26 +238,6 @@ export default function AIEstimatorScreen({
         )}
       </div>
 
-      <button
-        onClick={() => {
-           // Simulate a transcript event
-           setTranscript((prev: any) => [...prev, { role: "bot", content: "Added cement to your cart via voice", timestamp: Date.now() }]);
-           // Simulate cart addition
-           if (onAddToCart) onAddToCart({
-             product_id: "test-cement",
-             name: "UltraTech Cement",
-             quantity: 2,
-             unit: "bags",
-             unit_price: 400,
-             total: 800
-           });
-        }}
-        className="text-[10px] absolute z-50 top-16 left-2 bg-red-500 text-white p-1"
-        id="test-voice-btn"
-      >
-        Test Voice Add
-      </button>
-
       {/* Messages Stream (Maximizes available height) */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar p-3 sm:p-4 space-y-2">
         {messages.length === 0 && transcript.length === 0 ? (
