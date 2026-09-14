@@ -144,7 +144,14 @@ export default function ProductsScreen({
 
       {/* Product Grid */}
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4">
+        {/*
+          Column count is driven by the `isWeb` prop rather than Tailwind's sm:/md:
+          viewport breakpoints. The mobile view renders inside a fixed-width phone
+          frame that sits within the same (desktop-width) browser viewport, so
+          viewport-based breakpoints like sm:grid-cols-3 would activate there too
+          and force a cramped 3-column grid into ~380px of space.
+        */}
+        <div className={`grid gap-3 ${isWeb ? "grid-cols-3 lg:grid-cols-4 gap-4" : "grid-cols-2"}`}>
           {products.map((product) => {
             const hasVariants = !!product.variants;
             const qty = getCartQty(product.id);
@@ -170,9 +177,9 @@ export default function ProductsScreen({
 
                 {/* Content */}
                 <div className="p-3 flex flex-col flex-1">
-                  {/* Badges */}
-                  <div className="flex flex-wrap gap-1 mb-1.5">
-                    {product.badges?.map((badge, idx) => (
+                  {/* Badges (Cashback has its own dedicated box below, so it's excluded here to avoid showing it twice) */}
+                  <div className="flex flex-wrap gap-1 mb-1.5 min-h-[30px]">
+                    {product.badges?.filter((badge) => badge !== "Assured 2% Cashback").map((badge, idx) => (
                       <div key={idx} className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm ${
                         badge === "Free Delivery" ? "bg-[#1a7a3a] text-white" : ""
                       }`}>

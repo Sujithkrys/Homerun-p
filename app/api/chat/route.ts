@@ -1,4 +1,5 @@
 import { SYSTEM_PROMPT, WHATSAPP_BEHAVIOR } from "@/lib/system-prompt";
+import { detectLanguage } from "@/lib/language-detector";
 
 // Determine which provider to use based on available API keys
 function getProvider(): "sarvam" | "gemini" {
@@ -8,7 +9,7 @@ function getProvider(): "sarvam" | "gemini" {
 }
 
 // Compact system prompt for Sarvam to stay well within its 32,000 token context window
-function getSarvamSystemPrompt(channel?: string): string {
+function getSarvamSystemPrompt(channel?: string, detectedLang?: string | null): string {
   let prompt = SYSTEM_PROMPT
     .replace(/(\n\s{2,})/g, " ")
     .replace(/:\s+/g, ":")
@@ -21,12 +22,12 @@ function getSarvamSystemPrompt(channel?: string): string {
 }
 
 // ---- SARVAM AI (OpenAI-compatible API) ----
-async function callSarvam(message: string, history: any[], channel?: string) {
+async function callSarvam(message: string, history: any[], channel?: string, detectedLang?: string | null) {
   const apiKey = process.env.SARVAM_API_KEY!;
 
   // Build messages array in OpenAI format
   const messages: any[] = [
-    { role: "system", content: getSarvamSystemPrompt(channel) },
+    { role: "system", content: getSarvamSystemPrompt(channel, detectedLang) },
   ];
 
   // Add conversation history
@@ -41,7 +42,12 @@ async function callSarvam(message: string, history: any[], channel?: string) {
   }
 
   // Add current user message
-  messages.push({ role: "user", content: message });
+  let finalMessage = message;
+  if (detectedLang) {
+    const langSuffix = detectedLang === "English" ? "" : " (Romanized)";
+    finalMessage += `\n\n[SYSTEM DIRECTIVE FOR ASSISTANT: The user's message above is in ${detectedLang}. You MUST write your reply in ${detectedLang}${langSuffix}, ignoring the language of previous messages. Do NOT use native script for Indian languages.]`;
+  }
+  messages.push({ role: "user", content: finalMessage });
 
   // Use sarvam-105b-conversations (latest active conversational chat model on Sarvam API; 'sarvam-m' is deprecated by Sarvam)
   const model = process.env.SARVAM_MODEL || "sarvam-105b-conversations";
@@ -72,7 +78,7 @@ async function callSarvam(message: string, history: any[], channel?: string) {
 }
 
 // ---- GEMINI (Google Generative AI) ----
-async function callGemini(message: string, history: any[], channel?: string) {
+async function callGemini(message: string, history: any[], channel?: string, detectedLang?: string | null) {
   const { GoogleGenerativeAI } = await import("@google/generative-ai");
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("Missing Google Gemini API key");
@@ -113,7 +119,14 @@ async function callGemini(message: string, history: any[], channel?: string) {
   }
 
   const chat = model.startChat({ history: sanitized });
-  const result = await chat.sendMessage(message);
+  
+  let finalMessage = message;
+  if (detectedLang) {
+    const langSuffix = detectedLang === "English" ? "" : " (Romanized)";
+    finalMessage += `\n\n[SYSTEM DIRECTIVE FOR ASSISTANT: The user's message above is in ${detectedLang}. You MUST write your reply in ${detectedLang}${langSuffix}, ignoring the language of previous messages. Do NOT use native script for Indian languages.]`;
+  }
+  
+  const result = await chat.sendMessage(finalMessage);
   return result.response.text();
 }
 
@@ -143,14 +156,19 @@ export async function POST(req: Request) {
       });
     }
 
+    const detectedLang = detectLanguage(message);
+    if (detectedLang) {
+      console.log(`[LANGUAGE DETECTOR] Forced directive: ${detectedLang}`);
+    }
+
     console.log(`[${provider.toUpperCase()}] User: ${message} (channel: ${channel || "web"})`);
 
     // Call the active provider
     let responseText: string;
     if (provider === "sarvam") {
-      responseText = await callSarvam(message, history || [], channel);
+      responseText = await callSarvam(message, history || [], channel, detectedLang);
     } else {
-      responseText = await callGemini(message, history || [], channel);
+      responseText = await callGemini(message, history || [], channel, detectedLang);
     }
 
     console.log(`[${provider.toUpperCase()}] Response length: ${responseText.length}`);
