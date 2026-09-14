@@ -30,7 +30,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "sans-serif"],
+        sans: ["var(--font-inter)", "var(--font-noto-devanagari)", "var(--font-noto-telugu)", "sans-serif"],
         display: ["var(--font-space-grotesk)", "sans-serif"],
       },
     },

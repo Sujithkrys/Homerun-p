@@ -112,6 +112,7 @@ export default function MobileApp({
             onAddSuggestion={onAddSuggestion}
             onAddToCart={onAddToCart}
             onAddAllToCart={onAddAllToCart}
+            onUpdateQuantity={onUpdateQuantity}
             onBack={() => onNavigate("home")}
             onOpenCart={() => setIsCartOpen(true)}
             onResetChat={onResetChat}

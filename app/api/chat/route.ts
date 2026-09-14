@@ -49,8 +49,7 @@ async function callSarvamStream(message: string, history: any[], channel?: strin
 
   let finalMessage = message;
   if (detectedLang) {
-    const langSuffix = detectedLang === "English" ? "" : " (Romanized)";
-    finalMessage += `\n\n[SYSTEM DIRECTIVE FOR ASSISTANT: The user's message above is in ${detectedLang}. You MUST write your reply in ${detectedLang}${langSuffix}, ignoring the language of previous messages. Do NOT use native script for Indian languages.]`;
+    finalMessage += `\n\n[SYSTEM DIRECTIVE FOR ASSISTANT: You MUST write your reply in ${detectedLang}, ignoring the language of previous messages. CRITICAL: You MUST use Latin/English letters (Romanized script) for your reply, even if the user typed in native script. DO NOT output any native Indian script characters.]`;
   }
   messages.push({ role: "user", content: finalMessage });
 
@@ -124,8 +123,7 @@ async function callGeminiStream(message: string, history: any[], channel?: strin
   
   let finalMessage = message;
   if (detectedLang) {
-    const langSuffix = detectedLang === "English" ? "" : " (Romanized)";
-    finalMessage += `\n\n[SYSTEM DIRECTIVE FOR ASSISTANT: The user's message above is in ${detectedLang}. You MUST write your reply in ${detectedLang}${langSuffix}, ignoring the language of previous messages. Do NOT use native script for Indian languages.]`;
+    finalMessage += `\n\n[SYSTEM DIRECTIVE FOR ASSISTANT: You MUST write your reply in ${detectedLang}, ignoring the language of previous messages. CRITICAL: You MUST use Latin/English letters (Romanized script) for your reply, even if the user typed in native script. DO NOT output any native Indian script characters.]`;
   }
   
   const result = await chat.sendMessageStream(finalMessage);

@@ -26,6 +26,7 @@ interface AIEstimatorScreenProps {
   onAddSuggestion: (suggestion: Suggestion) => void;
   onAddToCart?: (item: CartItem) => void;
   onAddAllToCart?: (items: CartItem[]) => void;
+  onUpdateQuantity?: (productId: string, qty: number) => void;
   onBack?: () => void;
   onOpenCart?: () => void;
   onResetChat?: () => void;
@@ -45,6 +46,7 @@ export default function AIEstimatorScreen({
   onAddSuggestion,
   onAddToCart,
   onAddAllToCart,
+  onUpdateQuantity,
   onBack,
   onOpenCart,
   onResetChat,
@@ -62,7 +64,7 @@ export default function AIEstimatorScreen({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isWeb = variant === "web";
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const { callState, start, stop, transcript } = useSarvamVoice(variant, selectedLanguage);
+  const { callState, start, stop, transcript, setTranscript } = useSarvamVoice(variant, selectedLanguage);
 
   const handlePickLanguage = (language: string | null) => {
     onSelectLanguage?.(language);
@@ -83,6 +85,51 @@ export default function AIEstimatorScreen({
     // space instead of just the chat log.
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages, transcript, isLoading]);
+
+  const previousCartRef = useRef<CartItem[]>(cart);
+
+  useEffect(() => {
+    const prevCart = previousCartRef.current;
+    
+    // Only detect additions during an active call (or right after)
+    if (callState !== "idle") {
+      // Find items where the quantity increased or new items were added
+      const addedItems = cart.filter(newItem => {
+        const prevItem = prevCart.find(p => p.product_id === newItem.product_id);
+        if (!prevItem) return true; // Brand new item
+        return newItem.quantity > prevItem.quantity; // Quantity increased
+      });
+
+      if (addedItems.length > 0 && transcript.length > 0) {
+        // Find the index of the latest bot message
+        const lastBotIdx = [...transcript].reverse().findIndex(entry => entry.role === "bot");
+        
+        if (lastBotIdx !== -1) {
+          const actualIdx = transcript.length - 1 - lastBotIdx;
+          setTranscript(prev => {
+            const next = [...prev];
+            const currentCartItems = next[actualIdx].cart_items || [];
+            
+            // Merge added items into the transcript's cart_items
+            const newCartItems = [...currentCartItems];
+            addedItems.forEach(addedItem => {
+              const existingIdx = newCartItems.findIndex(ci => ci.product_id === addedItem.product_id);
+              if (existingIdx !== -1) {
+                newCartItems[existingIdx] = addedItem;
+              } else {
+                newCartItems.push(addedItem);
+              }
+            });
+            
+            next[actualIdx] = { ...next[actualIdx], cart_items: newCartItems };
+            return next;
+          });
+        }
+      }
+    }
+    
+    previousCartRef.current = cart;
+  }, [cart, callState, transcript, setTranscript]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,6 +238,26 @@ export default function AIEstimatorScreen({
         )}
       </div>
 
+      <button
+        onClick={() => {
+           // Simulate a transcript event
+           setTranscript((prev: any) => [...prev, { role: "bot", content: "Added cement to your cart via voice", timestamp: Date.now() }]);
+           // Simulate cart addition
+           if (onAddToCart) onAddToCart({
+             product_id: "test-cement",
+             name: "UltraTech Cement",
+             quantity: 2,
+             unit: "bags",
+             unit_price: 400,
+             total: 800
+           });
+        }}
+        className="text-[10px] absolute z-50 top-16 left-2 bg-red-500 text-white p-1"
+        id="test-voice-btn"
+      >
+        Test Voice Add
+      </button>
+
       {/* Messages Stream (Maximizes available height) */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar p-3 sm:p-4 space-y-2">
         {messages.length === 0 && transcript.length === 0 ? (
@@ -225,12 +292,15 @@ export default function AIEstimatorScreen({
                   id: `transcript-${entry.timestamp}`,
                   role: entry.role === "bot" ? "assistant" : "user",
                   content: entry.content,
+                  cart_items: entry.cart_items,
                 }}
                 variant="in-app"
                 allCartItems={cart}
                 onAddSuggestion={onAddSuggestion}
                 onAddToCart={onAddToCart}
                 onAddAllToCart={onAddAllToCart}
+                source="voice"
+                onUpdateQuantity={onUpdateQuantity}
               />
             ))}
           </>

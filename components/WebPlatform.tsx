@@ -252,6 +252,7 @@ export default function WebPlatform({
                   onAddSuggestion={onAddSuggestion}
                   onAddToCart={onAddToCart}
                   onAddAllToCart={onAddAllToCart}
+                  onUpdateQuantity={onUpdateQuantity}
                   onOpenCart={() => setIsSidebarCartOpen(true)}
                   onResetChat={onResetChat}
                   variant="web"

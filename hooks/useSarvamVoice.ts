@@ -7,6 +7,7 @@ export type TranscriptEntry = {
   role: "user" | "bot";
   content: string;
   timestamp: number;
+  cart_items?: import("@/lib/types").CartItem[];
 };
 
 

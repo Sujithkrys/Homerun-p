@@ -1,13 +1,148 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Message, CartItem, Suggestion } from "@/lib/types";
-import { CheckCheck, ShoppingBag, CreditCard, PlusCircle, Calculator } from "lucide-react";
+import { CheckCheck, ShoppingBag, CreditCard, PlusCircle, Calculator, Minus, Plus } from "lucide-react";
 import ProjectEstimateCard from "./ProjectEstimateCard";
 import SuggestionChips from "./SuggestionChips";
 import DownloadEstimateButton from "./DownloadEstimateButton";
 import WhatsAppText from "@/lib/formatWhatsApp";
 import ProductRecommendation from "./ProductRecommendation";
+
+function EditableCartItem({
+  item,
+  onUpdateQuantity
+}: {
+  item: CartItem;
+  onUpdateQuantity?: (productId: string, qty: number) => Promise<boolean> | void;
+}) {
+  const [localQty, setLocalQty] = useState(item.quantity);
+  const [errorText, setErrorText] = useState<string | null>(null);
+  const [showUndo, setShowUndo] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isUpdatingRef = useRef(false);
+  const originalQtyRef = useRef(item.quantity);
+
+  // Update local if parent changes
+  useEffect(() => {
+    if (!isUpdatingRef.current) {
+      setLocalQty(item.quantity);
+      originalQtyRef.current = item.quantity;
+    }
+  }, [item.quantity]);
+
+  const handleChange = (newQty: number) => {
+    setLocalQty(newQty);
+    setErrorText(null);
+    isUpdatingRef.current = true;
+    
+    if (newQty === 0) {
+      setShowUndo(true);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(async () => {
+        setShowUndo(false);
+        try {
+          if (onUpdateQuantity) {
+             await onUpdateQuantity(item.product_id, 0);
+          }
+        } catch {
+          setLocalQty(originalQtyRef.current);
+          setErrorText("Couldn't update — try again");
+          isUpdatingRef.current = false;
+        }
+      }, 3000);
+      return;
+    }
+
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(async () => {
+      try {
+        if (onUpdateQuantity) {
+          const success = await onUpdateQuantity(item.product_id, newQty);
+          if (success === false) throw new Error("Sync failed");
+        }
+        originalQtyRef.current = newQty;
+      } catch (err) {
+        setLocalQty(originalQtyRef.current);
+        setErrorText("Couldn't update — try again");
+      } finally {
+        isUpdatingRef.current = false;
+      }
+    }, 500);
+  };
+
+  const handleUndo = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setShowUndo(false);
+    setLocalQty(originalQtyRef.current);
+    isUpdatingRef.current = false;
+  };
+
+  if (localQty === 0 && !showUndo) {
+    return null;
+  }
+
+  if (showUndo) {
+    return (
+      <div className="flex items-center justify-between text-xs bg-white px-2.5 py-1.5 rounded-lg border border-emerald-100 shadow-2xs mt-1">
+        <span className="text-slate-500 italic">Removed {item.name}</span>
+        <button type="button" onClick={handleUndo} className="font-bold text-[#1a7a3a] hover:text-[#155d2c] active:scale-95 transition-all">
+          Undo
+        </button>
+      </div>
+    );
+  }
+
+  const localTotal = localQty * item.unit_price;
+
+  return (
+    <div className="flex flex-col gap-1 text-xs bg-white px-2.5 py-2 rounded-lg border border-emerald-100 shadow-2xs">
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-1.5 min-w-0 mr-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#1a7a3a] shrink-0 mt-1" />
+          <div className="flex flex-col">
+            <span className="font-semibold leading-tight text-slate-800">{item.name}</span>
+            <span className="text-[10px] text-slate-500">₹{item.unit_price} / {item.unit}</span>
+          </div>
+        </div>
+        <div className="flex flex-col items-end shrink-0">
+          <span className="font-bold text-[#1a1a1a]">₹{localTotal.toLocaleString("en-IN")}</span>
+        </div>
+      </div>
+      
+      <div className="flex items-center justify-between mt-1">
+        {errorText ? (
+          <span className="text-[10px] text-red-500 font-medium">{errorText}</span>
+        ) : (
+          <span className="text-[10px] text-emerald-700/0 select-none">Editable</span> // invisible spacer
+        )}
+        
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center border border-slate-200 rounded-lg overflow-hidden bg-slate-50 shrink-0"
+        >
+          <button
+            type="button"
+            onClick={() => handleChange(localQty - 1)}
+            className="p-1 px-1.5 text-slate-600 hover:bg-slate-200 transition-colors"
+          >
+            <Minus className="w-3 h-3" />
+          </button>
+          <span className="px-2 font-bold text-xs font-mono min-w-[24px] text-center">
+            {localQty}
+          </span>
+          <button
+            type="button"
+            onClick={() => handleChange(localQty + 1)}
+            className="p-1 px-1.5 text-slate-600 hover:bg-slate-200 transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface MessageBubbleProps {
   message: Message;
@@ -17,6 +152,8 @@ interface MessageBubbleProps {
   onAddSuggestion?: (suggestion: Suggestion) => void;
   onAddToCart?: (product: CartItem) => void;
   onAddAllToCart?: (products: CartItem[]) => void;
+  source?: "voice" | "text";
+  onUpdateQuantity?: (productId: string, qty: number) => void;
 }
 
 // Simple markdown formatter helper for bold, bullets, and line breaks
@@ -87,6 +224,8 @@ export default function MessageBubble({
   onAddSuggestion,
   onAddToCart,
   onAddAllToCart,
+  source = "text",
+  onUpdateQuantity,
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const hasCartItems = message.cart_items && message.cart_items.length > 0;
@@ -346,23 +485,35 @@ export default function MessageBubble({
               </span>
             </div>
             <div className="space-y-1.5">
-              {message.cart_items.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between text-xs text-slate-800 bg-white px-2.5 py-1.5 rounded-lg border border-emerald-100 shadow-2xs"
-                >
-                  <div className="flex items-center gap-1.5 truncate mr-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#1a7a3a] shrink-0" />
-                    <span className="font-semibold truncate">{item.name}</span>
-                    <span className="text-[11px] text-slate-500 shrink-0">
-                      × {item.quantity} {item.unit}
+              {message.cart_items.map((item, idx) => {
+                if (source === "voice") {
+                  return (
+                    <EditableCartItem
+                      key={item.product_id || idx}
+                      item={item}
+                      onUpdateQuantity={onUpdateQuantity}
+                    />
+                  );
+                }
+                
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between text-xs text-slate-800 bg-white px-2.5 py-1.5 rounded-lg border border-emerald-100 shadow-2xs"
+                  >
+                    <div className="flex items-center gap-1.5 truncate mr-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#1a7a3a] shrink-0" />
+                      <span className="font-semibold truncate">{item.name}</span>
+                      <span className="text-[11px] text-slate-500 shrink-0">
+                        × {item.quantity} {item.unit}
+                      </span>
+                    </div>
+                    <span className="font-bold text-[#1a1a1a] shrink-0">
+                      ₹{item.total.toLocaleString("en-IN")}
                     </span>
                   </div>
-                  <span className="font-bold text-[#1a1a1a] shrink-0">
-                    ₹{item.total.toLocaleString("en-IN")}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

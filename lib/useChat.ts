@@ -484,12 +484,15 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
   };
 
   // Update item quantity
-  const handleUpdateQuantity = async (productId: string, newQty: number) => {
+  const handleUpdateQuantity = async (productId: string, newQty: number): Promise<boolean> => {
     if (newQty <= 0) {
-      handleRemoveItem(productId);
-      return;
+      return handleRemoveItem(productId);
     }
     
+    // Store old quantity for rollback
+    const itemToUpdate = cart.find(i => i.product_id === productId);
+    const oldQty = itemToUpdate ? itemToUpdate.quantity : 1;
+
     // Optimistic update
     setCart((prev) =>
       prev.map((item) =>
@@ -501,29 +504,63 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
 
     const sessionId = getOrCreateSessionId(mode);
     if (sessionId) {
-      await fetch("/api/cart/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, product_id: productId, quantity: newQty }),
-      });
-      syncCart();
+      try {
+        const res = await fetch("/api/cart/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId, product_id: productId, quantity: newQty }),
+        });
+        
+        if (!res.ok) throw new Error("Sync failed");
+        
+        syncCart();
+        return true;
+      } catch (err) {
+        console.error("Cart sync failed:", err);
+        // Rollback
+        setCart((prev) =>
+          prev.map((item) =>
+            item.product_id === productId
+              ? { ...item, quantity: oldQty, total: oldQty * item.unit_price }
+              : item
+          )
+        );
+        return false;
+      }
     }
+    return false;
   };
 
   // Remove single item
-  const handleRemoveItem = async (productId: string) => {
+  const handleRemoveItem = async (productId: string): Promise<boolean> => {
+    // Store old item for rollback
+    const itemToRemove = cart.find(i => i.product_id === productId);
+    
     // Optimistic update
     setCart((prev) => prev.filter((item) => item.product_id !== productId));
     
     const sessionId = getOrCreateSessionId(mode);
     if (sessionId) {
-      await fetch("/api/cart/remove", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, product_id: productId }),
-      });
-      syncCart();
+      try {
+        const res = await fetch("/api/cart/remove", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId, product_id: productId }),
+        });
+        
+        if (!res.ok) throw new Error("Remove failed");
+        syncCart();
+        return true;
+      } catch (err) {
+        console.error("Cart remove failed:", err);
+        // Rollback
+        if (itemToRemove) {
+          setCart((prev) => [...prev, itemToRemove]);
+        }
+        return false;
+      }
     }
+    return false;
   };
 
   // Clear all items

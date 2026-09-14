@@ -1,10 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Inter, Space_Grotesk, Noto_Sans_Telugu, Noto_Sans_Devanagari } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+const notoSansTelugu = Noto_Sans_Telugu({
+  subsets: ["telugu"],
+  variable: "--font-noto-telugu",
+  display: "swap",
+});
+
+const notoSansDevanagari = Noto_Sans_Devanagari({
+  subsets: ["devanagari"],
+  variable: "--font-noto-devanagari",
   display: "swap",
 });
 
@@ -46,7 +58,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${notoSansTelugu.variable} ${notoSansDevanagari.variable}`}>
       <body className="font-sans antialiased text-slate-900 bg-slate-100 min-h-screen selection:bg-homerun-yellow/30 selection:text-homerun-green-dark">
         {children}
       </body>
