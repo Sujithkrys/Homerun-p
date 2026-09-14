@@ -34,6 +34,9 @@ interface MobileAppProps {
   demoOrder: DemoOrder | null;
   onPlaceOrder: () => void;
   bill: BillDetailsType;
+  selectedLanguage?: string | null;
+  onSelectLanguage?: (language: string | null) => void;
+  awaitingLanguageConfirm?: boolean;
 }
 
 export default function MobileApp({
@@ -59,6 +62,9 @@ export default function MobileApp({
   demoOrder,
   onPlaceOrder,
   bill,
+  selectedLanguage,
+  onSelectLanguage,
+  awaitingLanguageConfirm,
 }: MobileAppProps) {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
@@ -108,6 +114,9 @@ export default function MobileApp({
             onOpenCart={() => setIsCartOpen(true)}
             onResetChat={onResetChat}
             variant="mobile"
+            selectedLanguage={selectedLanguage}
+            onSelectLanguage={onSelectLanguage}
+            awaitingLanguageConfirm={awaitingLanguageConfirm}
           />
         )}
 

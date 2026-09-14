@@ -58,7 +58,11 @@ export interface Message {
   suggestions?: Suggestion[];
   timestamp?: string;
   isQuickReplyAction?: boolean;
+  language_mismatch?: boolean;
 }
+
+export const SUPPORTED_LANGUAGES = ["English", "Hindi", "Telugu", "Kannada", "Tamil"] as const;
+export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number];
 
 export interface ProductCatalogItem {
   id: string;

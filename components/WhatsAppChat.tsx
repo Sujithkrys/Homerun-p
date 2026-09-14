@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Message, CartItem, Suggestion } from "@/lib/types";
+import { Message, CartItem, Suggestion, SUPPORTED_LANGUAGES } from "@/lib/types";
 import MessageBubble from "./MessageBubble";
 import QuickActions from "./QuickActions";
 import {
@@ -12,6 +12,8 @@ import {
   Mic,
   Send,
   RefreshCw,
+  Languages,
+  Check,
 } from "lucide-react";
 import { HomeRunLogo } from "./HomeRunLogo";
 
@@ -26,6 +28,9 @@ interface WhatsAppChatProps {
   onAddToCart?: (item: CartItem) => void;
   onAddAllToCart?: (items: CartItem[]) => void;
   setMessages?: React.Dispatch<React.SetStateAction<Message[]>>;
+  selectedLanguage?: string | null;
+  onSelectLanguage?: (language: string | null) => void;
+  awaitingLanguageConfirm?: boolean;
 }
 
 export default function WhatsAppChat({
@@ -39,11 +44,20 @@ export default function WhatsAppChat({
   onAddToCart,
   onAddAllToCart,
   setMessages,
+  selectedLanguage = null,
+  onSelectLanguage,
+  awaitingLanguageConfirm = false,
 }: WhatsAppChatProps) {
   const [inputText, setInputText] = useState("");
   const [activeSelectionItems, setActiveSelectionItems] = useState<CartItem[] | null>(null);
   const [lastSelectedItems, setLastSelectedItems] = useState<CartItem[] | null>(null);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const handlePickLanguage = (language: string | null) => {
+    onSelectLanguage?.(language);
+    setShowLanguageMenu(false);
+  };
 
   // Auto-scroll on new message
   useEffect(() => {
@@ -332,6 +346,16 @@ https://rzp.io/l/homerun-order
 
         {/* WhatsApp Right Menu */}
         <div className="flex items-center gap-1 text-white/90 shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowLanguageMenu((prev) => !prev)}
+            className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+              awaitingLanguageConfirm ? "bg-amber-400/90 text-[#075e54]" : "hover:bg-white/10"
+            }`}
+            title="Change Language"
+          >
+            <Languages className="w-4 h-4" />
+          </button>
           {onResetChat && (
             <button
               type="button"
@@ -351,6 +375,31 @@ https://rzp.io/l/homerun-order
           </button>
         </div>
       </div>
+
+      {/* Language Picker Dropdown */}
+      {showLanguageMenu && (
+        <div className="absolute right-2 top-[68px] z-50 bg-white rounded-lg shadow-lg border border-slate-200 py-1 w-44 animate-fadeIn">
+          <button
+            type="button"
+            onClick={() => handlePickLanguage(null)}
+            className="w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-slate-50 cursor-pointer"
+          >
+            <span className="text-[#333333]">Auto-detect (default)</span>
+            {!selectedLanguage && <Check className="w-3.5 h-3.5 text-[#075e54]" />}
+          </button>
+          {SUPPORTED_LANGUAGES.map((lang) => (
+            <button
+              type="button"
+              key={lang}
+              onClick={() => handlePickLanguage(lang)}
+              className="w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-slate-50 cursor-pointer"
+            >
+              <span className="text-[#333333]">{lang}</span>
+              {selectedLanguage === lang && <Check className="w-3.5 h-3.5 text-[#075e54]" />}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* WhatsApp Chat Area (#ece5dd with doodle background) */}
       <div className="flex-1 overflow-y-auto p-3.5 space-y-1 whatsapp-bg">
@@ -405,6 +454,14 @@ https://rzp.io/l/homerun-order
                   >
                     <span>❓</span>
                     <span>Ask a Question</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowLanguageMenu(true)}
+                    className="w-full bg-white hover:bg-slate-50 border border-slate-200/90 rounded-lg py-2 px-3 text-xs font-bold text-[#075e54] flex items-center justify-center gap-2 shadow-2xs cursor-pointer transition-all active:scale-98"
+                  >
+                    <span>🌐</span>
+                    <span>Change Language</span>
                   </button>
                 </div>
               )}

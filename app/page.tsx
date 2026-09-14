@@ -96,6 +96,9 @@ export default function HomePage() {
               demoOrder={webChat.demoOrder}
               onPlaceOrder={() => webChat.handlePlaceOrder(() => navigateTo("orders"))}
               bill={webChat.bill}
+              selectedLanguage={webChat.selectedLanguage}
+              onSelectLanguage={webChat.handleSelectLanguage}
+              awaitingLanguageConfirm={webChat.awaitingLanguageConfirm}
             />
           </div>
         )}
@@ -125,6 +128,9 @@ export default function HomePage() {
               demoOrder={mobileChat.demoOrder}
               onPlaceOrder={() => mobileChat.handlePlaceOrder(() => navigateTo("orders"))}
               bill={mobileChat.bill}
+              selectedLanguage={mobileChat.selectedLanguage}
+              onSelectLanguage={mobileChat.handleSelectLanguage}
+              awaitingLanguageConfirm={mobileChat.awaitingLanguageConfirm}
             />
           </PhoneFrame>
         )}
@@ -142,6 +148,9 @@ export default function HomePage() {
               onAddToCart={whatsappChat.addToCart}
               onAddAllToCart={whatsappChat.addAllToCart}
               setMessages={whatsappChat.setMessages}
+              selectedLanguage={whatsappChat.selectedLanguage}
+              onSelectLanguage={whatsappChat.handleSelectLanguage}
+              awaitingLanguageConfirm={whatsappChat.awaitingLanguageConfirm}
             />
           </PhoneFrame>
         )}

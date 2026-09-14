@@ -23,7 +23,7 @@ export function getOrCreateSessionId(mode: string = "default") {
   return sessionCache.get(mode)!;
 }
 
-export function useSarvamVoice(mode: string = "default") {
+export function useSarvamVoice(mode: string = "default", preferredLanguage?: string | null) {
   const [callState, setCallState] = useState<CallState>("idle");
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const sessionRef = useRef<ConversationAgent | null>(null);
@@ -45,6 +45,10 @@ export function useSarvamVoice(mode: string = "default") {
       output_sample_rate: 16000 as const,
       agent_variables: {
         user_identifier: sessionId,
+        // Read by the Sarvam agent template to pick which language it
+        // speaks/listens in. Omitted (falls back to the agent's own
+        // default/auto-detect) when the user hasn't picked one.
+        ...(preferredLanguage ? { preferred_language: preferredLanguage } : {}),
       }
     };
 
@@ -86,12 +90,17 @@ export function useSarvamVoice(mode: string = "default") {
     sessionRef.current = session;
 
     return () => {
-      // Clean up the session when unmounting
+      // Clean up the session when unmounting, or before rebuilding it below
+      // with a new preferredLanguage.
       if (sessionRef.current) {
         sessionRef.current.stop();
       }
     };
-  }, []);
+    // Rebuilding the session (and reconnecting) is how a language switch
+    // mid-conversation takes effect — the agent needs a fresh session to
+    // pick up the new preferred_language.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preferredLanguage]);
 
   const start = useCallback(() => {
     if (sessionRef.current && callState === "idle") {

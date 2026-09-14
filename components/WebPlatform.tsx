@@ -57,6 +57,9 @@ interface WebPlatformProps {
   demoOrder: DemoOrder | null;
   onPlaceOrder: () => void;
   bill: BillDetailsType;
+  selectedLanguage?: string | null;
+  onSelectLanguage?: (language: string | null) => void;
+  awaitingLanguageConfirm?: boolean;
 }
 
 export default function WebPlatform({
@@ -82,6 +85,9 @@ export default function WebPlatform({
   demoOrder,
   onPlaceOrder,
   bill,
+  selectedLanguage,
+  onSelectLanguage,
+  awaitingLanguageConfirm,
 }: WebPlatformProps) {
   const [isSidebarCartOpen, setIsSidebarCartOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -247,6 +253,9 @@ export default function WebPlatform({
                   onOpenCart={() => setIsSidebarCartOpen(true)}
                   onResetChat={onResetChat}
                   variant="web"
+                  selectedLanguage={selectedLanguage}
+                  onSelectLanguage={onSelectLanguage}
+                  awaitingLanguageConfirm={awaitingLanguageConfirm}
                 />
               </div>
             </div>

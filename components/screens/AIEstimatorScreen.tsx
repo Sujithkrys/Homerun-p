@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Message, CartItem, Suggestion } from "@/lib/types";
+import { Message, CartItem, Suggestion, SUPPORTED_LANGUAGES } from "@/lib/types";
 import MessageBubble from "../MessageBubble";
 import QuickActions from "../QuickActions";
 import { VoiceButton } from "../VoiceButton";
@@ -14,6 +14,8 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
+  Languages,
+  Check,
 } from "lucide-react";
 import { HomeRunThunder } from "../HomeRunLogo";
 
@@ -30,6 +32,9 @@ interface AIEstimatorScreenProps {
   onResetChat?: () => void;
   variant?: "mobile" | "web";
   initialInput?: string;
+  selectedLanguage?: string | null;
+  onSelectLanguage?: (language: string | null) => void;
+  awaitingLanguageConfirm?: boolean;
 }
 
 export default function AIEstimatorScreen({
@@ -45,15 +50,24 @@ export default function AIEstimatorScreen({
   onResetChat,
   variant = "mobile",
   initialInput = "",
+  selectedLanguage = null,
+  onSelectLanguage,
+  awaitingLanguageConfirm = false,
 }: AIEstimatorScreenProps) {
   const [inputText, setInputText] = useState(initialInput);
   const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [isVoiceThinking, setIsVoiceThinking] = useState(false);
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isWeb = variant === "web";
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const { callState, start, stop, transcript } = useSarvamVoice(variant);
+  const { callState, start, stop, transcript } = useSarvamVoice(variant, selectedLanguage);
+
+  const handlePickLanguage = (language: string | null) => {
+    onSelectLanguage?.(language);
+    setIsLanguageMenuOpen(false);
+  };
 
   useEffect(() => {
     if (initialInput) {
@@ -173,6 +187,47 @@ export default function AIEstimatorScreen({
         </div>
       </div>
 
+      {/* Language Picker Bar */}
+      <div className="relative shrink-0 bg-white border-b border-[#eeeeee] z-10 select-none">
+        <button
+          type="button"
+          onClick={() => setIsLanguageMenuOpen((prev) => !prev)}
+          className={`w-full h-8 px-3 flex items-center justify-between text-[11px] font-semibold transition-colors cursor-pointer ${
+            awaitingLanguageConfirm ? "text-amber-700 bg-amber-50" : "text-[#555555] hover:bg-[#fafafa]"
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <Languages className="w-3.5 h-3.5" />
+            <span>{selectedLanguage ? `Language: ${selectedLanguage}` : "Change Language"}</span>
+          </span>
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isLanguageMenuOpen ? "rotate-180" : ""}`} />
+        </button>
+
+        {isLanguageMenuOpen && (
+          <div className="absolute left-0 right-0 top-full bg-white border border-t-0 border-[#eeeeee] shadow-md z-20 py-1">
+            <button
+              type="button"
+              onClick={() => handlePickLanguage(null)}
+              className="w-full text-left px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 cursor-pointer"
+            >
+              <span className="text-[#333333]">Auto-detect (default)</span>
+              {!selectedLanguage && <Check className="w-3.5 h-3.5 text-[#1a7a3a]" />}
+            </button>
+            {SUPPORTED_LANGUAGES.map((lang) => (
+              <button
+                type="button"
+                key={lang}
+                onClick={() => handlePickLanguage(lang)}
+                className="w-full text-left px-4 py-2 text-xs flex items-center justify-between hover:bg-slate-50 cursor-pointer"
+              >
+                <span className="text-[#333333]">{lang}</span>
+                {selectedLanguage === lang && <Check className="w-3.5 h-3.5 text-[#1a7a3a]" />}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Messages Stream (Maximizes available height) */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar p-3 sm:p-4 space-y-2">
         {messages.length === 0 && transcript.length === 0 ? (
@@ -189,16 +244,28 @@ export default function AIEstimatorScreen({
           </div>
         ) : (
           <>
-            {messages.map((msg) => (
-              <MessageBubble
-                key={msg.id}
-                message={msg}
-                variant="in-app"
-                allCartItems={cart}
-                onAddSuggestion={onAddSuggestion}
-                onAddToCart={onAddToCart}
-                onAddAllToCart={onAddAllToCart}
-              />
+            {messages.map((msg, index) => (
+              <React.Fragment key={msg.id}>
+                <MessageBubble
+                  message={msg}
+                  variant="in-app"
+                  allCartItems={cart}
+                  onAddSuggestion={onAddSuggestion}
+                  onAddToCart={onAddToCart}
+                  onAddAllToCart={onAddAllToCart}
+                />
+                {/* Nudge to pick a language, shown right under the welcome message */}
+                {index === 0 && messages.length === 1 && msg.role === "assistant" && !selectedLanguage && (
+                  <button
+                    type="button"
+                    onClick={() => setIsLanguageMenuOpen(true)}
+                    className="flex items-center gap-1.5 text-[11px] font-bold text-[#1a7a3a] bg-[#eef7f3] hover:bg-[#e0f0e8] border border-[#1a7a3a]/20 rounded-full px-3 py-1.5 ml-1 w-fit transition-colors cursor-pointer animate-fadeIn"
+                  >
+                    <Languages className="w-3.5 h-3.5" />
+                    <span>Change Language</span>
+                  </button>
+                )}
+              </React.Fragment>
             ))}
             {transcript.map((entry) => (
               <MessageBubble

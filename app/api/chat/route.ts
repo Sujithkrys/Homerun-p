@@ -1,5 +1,17 @@
 import { SYSTEM_PROMPT, WHATSAPP_BEHAVIOR } from "@/lib/system-prompt";
 import { detectLanguage } from "@/lib/language-detector";
+import { SUPPORTED_LANGUAGES } from "@/lib/types";
+
+// If the user's message directly names one of our supported languages (e.g.
+// replying "Kannada" to a language-confirmation prompt), treat that as an
+// explicit, high-confidence signal — stronger than the keyword-based detector.
+function detectExplicitLanguageName(text: string): string | null {
+  const lower = text.toLowerCase();
+  for (const lang of SUPPORTED_LANGUAGES) {
+    if (new RegExp(`\\b${lang.toLowerCase()}\\b`).test(lower)) return lang;
+  }
+  return null;
+}
 
 // Determine which provider to use based on available API keys
 function getProvider(): "sarvam" | "gemini" {
@@ -153,7 +165,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { message, history, channel } = await req.json();
+    const { message, history, channel, locked_language } = await req.json();
 
     if (!message || typeof message !== "string") {
       return Response.json({
@@ -164,19 +176,49 @@ export async function POST(req: Request) {
       });
     }
 
-    const detectedLang = detectLanguage(message);
+    // An explicit language name in the message (e.g. a reply to a language
+    // confirmation prompt) takes priority over the keyword-based detector.
+    const detectedLang = detectExplicitLanguageName(message) || detectLanguage(message);
     if (detectedLang) {
       console.log(`[LANGUAGE DETECTOR] Forced directive: ${detectedLang}`);
     }
 
     console.log(`[${provider.toUpperCase()}] User: ${message} (channel: ${channel || "web"})`);
 
+    // The user picked a language via the language button and this message
+    // was confidently detected as a *different* one — don't silently switch
+    // or guess; ask which language to continue in. No AI call needed here,
+    // which also keeps this fast and free of any model-compliance risk.
+    if (
+      locked_language &&
+      SUPPORTED_LANGUAGES.includes(locked_language) &&
+      detectedLang &&
+      detectedLang !== locked_language
+    ) {
+      return Response.json({
+        detected_language: detectedLang,
+        message: `You'd previously chosen **${locked_language}**, but this message looks like **${detectedLang}**. Which language should I continue in — ${locked_language} or ${detectedLang}?`,
+        recommended_products: [],
+        cart_items: [],
+        estimation_summary: null,
+        language_mismatch: true,
+      });
+    }
+
+    // When a language is locked in and this message doesn't contradict it
+    // (matches, or was too ambiguous for the detector to call), force
+    // replies into that language rather than leaving it to per-message
+    // detection.
+    const effectiveLangDirective = locked_language && SUPPORTED_LANGUAGES.includes(locked_language)
+      ? locked_language
+      : detectedLang;
+
     // Call the active provider
     let responseText: string;
     if (provider === "sarvam") {
-      responseText = await callSarvam(message, history || [], channel, detectedLang);
+      responseText = await callSarvam(message, history || [], channel, effectiveLangDirective);
     } else {
-      responseText = await callGemini(message, history || [], channel, detectedLang);
+      responseText = await callGemini(message, history || [], channel, effectiveLangDirective);
     }
 
     console.log(`[${provider.toUpperCase()}] Response length: ${responseText.length}`);

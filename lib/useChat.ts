@@ -66,6 +66,58 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
   const [isLoading, setIsLoading] = useState(false);
   const lastVoiceCartCountRef = useRef(0);
 
+  // Language lock: null = auto-detect per message (default, unchanged
+  // behavior). Set by the language picker button; also drives the voice
+  // agent's spoken language.
+  const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
+  // True right after the backend asks the user to confirm which language to
+  // continue in (their message didn't match the locked language).
+  const [awaitingLanguageConfirm, setAwaitingLanguageConfirm] = useState(false);
+
+  // Chat session lifecycle: the assistant should stay interactive (asking
+  // "anything else?") after items are added, but the session naturally ends
+  // once the user checks out or goes quiet. `sessionEnded` drives the
+  // "Start New Chat" UI state in AIEstimatorScreen.
+  const [sessionEnded, setSessionEnded] = useState(false);
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const SESSION_INACTIVITY_MS = 5 * 60 * 1000;
+
+  const clearInactivityTimer = () => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+  };
+
+  // Called whenever the assistant is now waiting on the user (after a reply
+  // or a cart addition) — if they go quiet for 5 minutes, close the session.
+  const scheduleInactivityClose = () => {
+    clearInactivityTimer();
+    inactivityTimerRef.current = setTimeout(() => {
+      setSessionEnded(true);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `asst-session-end-${Date.now()}`,
+          role: "assistant",
+          content:
+            "It looks like you've stepped away, so I've closed this chat session. No worries — tap **Start New Chat** anytime you need materials delivered in 60 minutes!",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      ]);
+    }, SESSION_INACTIVITY_MS);
+  };
+
+  // Any fresh activity from the user resumes a session that had ended.
+  const resumeSession = () => {
+    clearInactivityTimer();
+    setSessionEnded(false);
+  };
+
+  useEffect(() => {
+    return () => clearInactivityTimer();
+  }, []);
+
   // Fill in the greeting's live timestamp only after mount (client-side), so
   // the server-rendered and hydrated HTML match on first paint.
   useEffect(() => {
@@ -142,6 +194,10 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
   const handleSendMessage = async (userText: string): Promise<Message | null> => {
     if (!userText.trim() || isLoading) return null;
 
+    // The user is engaging again — cancel any pending auto-close and reopen
+    // a session that may have ended while they were away.
+    resumeSession();
+
     const currentTime = new Date().toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
@@ -183,6 +239,12 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
+    // While waiting on the user to confirm a language switch, send this one
+    // message unlocked so the backend can freely detect whatever language
+    // they actually replied in.
+    const wasAwaitingConfirm = awaitingLanguageConfirm;
+    const lockedLanguageToSend = wasAwaitingConfirm ? null : selectedLanguage;
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -190,6 +252,7 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
         body: JSON.stringify({
           message: userText,
           history: [...messages, userMessage],
+          locked_language: lockedLanguageToSend,
         }),
       });
 
@@ -198,6 +261,17 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
         data = await response.json();
       } catch (jsonErr) {
         console.error("Failed to parse JSON response:", jsonErr);
+      }
+
+      if (data.language_mismatch) {
+        setAwaitingLanguageConfirm(true);
+      } else if (wasAwaitingConfirm) {
+        // Resolve the pending confirmation: whatever language they just
+        // replied in becomes the new locked language. If it couldn't be
+        // detected either, fall back to plain auto-detect rather than
+        // leaving the user stuck.
+        setSelectedLanguage(data.detected_language || null);
+        setAwaitingLanguageConfirm(false);
       }
 
       // Add to Cart State: Merge new items
@@ -221,6 +295,7 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
         estimation_summary: data.estimation_summary || null,
         project_estimate: data.project_estimate || null,
         suggestions: data.suggestions || [],
+        language_mismatch: data.language_mismatch || false,
         timestamp: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -303,6 +378,15 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
   // Reset conversation to mode's clean greeting
   const handleResetChat = () => {
     setMessages([getInitialGreeting(mode)]);
+    setSelectedLanguage(null);
+    setAwaitingLanguageConfirm(false);
+  };
+
+  // Explicit pick from the language button's menu — always resolves any
+  // pending confirmation immediately.
+  const handleSelectLanguage = (language: string | null) => {
+    setSelectedLanguage(language);
+    setAwaitingLanguageConfirm(false);
   };
 
   // Place order
@@ -447,6 +531,10 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
     setDemoOrder,
     bill,
     totalCartCount,
+    selectedLanguage,
+    awaitingLanguageConfirm,
+    handleSelectLanguage,
+    selectLanguage: handleSelectLanguage, // alias
     handleSendMessage,
     sendMessage: handleSendMessage, // alias
     handleAddSuggestionToCart,
