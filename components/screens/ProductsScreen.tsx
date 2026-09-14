@@ -151,14 +151,14 @@ export default function ProductsScreen({
           viewport-based breakpoints like sm:grid-cols-3 would activate there too
           and force a cramped 3-column grid into ~380px of space.
         */}
-        <div className={`grid gap-3 ${isWeb ? "grid-cols-3 lg:grid-cols-4 gap-4" : "grid-cols-2"}`}>
+        <div className={`grid gap-3 items-start ${isWeb ? "grid-cols-3 lg:grid-cols-4 gap-4" : "grid-cols-2"}`}>
           {products.map((product) => {
             const hasVariants = !!product.variants;
             const qty = getCartQty(product.id);
             const variantCount = hasVariants ? Object.values(product.variants || {}).flat().length : 0;
 
             return (
-              <div key={product.id} className="bg-white rounded-2xl overflow-hidden flex flex-col h-full shadow-sm border border-slate-100">
+              <div key={product.id} className="bg-white rounded-2xl overflow-hidden flex flex-col shadow-sm border border-slate-100">
                 {/* Image Area */}
                 <div className="relative aspect-[4/3] p-4 bg-white flex items-center justify-center border-b border-slate-50">
                   {product.discount_percentage && (
@@ -221,7 +221,7 @@ export default function ProductsScreen({
                   )}
 
                   {/* Action Button */}
-                  <div className="mt-auto pt-1">
+                  <div className="mt-1">
                     {hasVariants ? (
                       <button
                         onClick={() => setSelectedProduct(product)}
