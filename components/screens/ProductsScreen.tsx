@@ -190,8 +190,8 @@ export default function ProductsScreen({
                     ))}
                   </div>
 
-                  {/* Title */}
-                  <div className="text-xs font-bold text-slate-800 line-clamp-2 leading-tight mb-2">
+                  {/* Title (fixed to 2 lines' height so 1-line names don't shift everything below them up) */}
+                  <div className="text-xs font-bold text-slate-800 line-clamp-2 leading-tight mb-2 h-[30px]">
                     {product.name}
                   </div>
 
