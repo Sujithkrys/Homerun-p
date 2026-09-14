@@ -112,7 +112,7 @@ export function WhatsAppText({ text }: { text: string }) {
         if (numMatch) {
           return (
             <div key={i} className="flex items-start gap-1.5 my-0.5 ml-0.5">
-              <span className="text-slate-600 select-none shrink-0 font-medium text-xs">
+              <span className="text-slate-600 select-none shrink-0 font-medium">
                 {numMatch[2]}
               </span>
               <span className="flex-1">

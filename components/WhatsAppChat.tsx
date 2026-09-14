@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Message, CartItem, Suggestion, SUPPORTED_LANGUAGES } from "@/lib/types";
+import { generateEstimatePDF } from "@/lib/generatePDF";
 import MessageBubble from "./MessageBubble";
 import QuickActions from "./QuickActions";
 import {
@@ -97,43 +98,50 @@ export default function WhatsAppChat({
     setMessages((prev) => [...prev, botPrompt]);
   };
 
-  // Flow Handler 2: User taps "Download List"
+  // Flow Handler 2: User taps "Download List" — actually generates and
+  // downloads a PDF, rather than just dumping the list back into the chat.
   const handleDownloadList = (prods: CartItem[]) => {
-    if (!setMessages) return;
     const total = prods.reduce((sum, p) => sum + p.total, 0);
-    const dateStr = new Date().toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
 
-    const lines = prods
-      .map(
-        (p, i) =>
-          `${i + 1}. ${p.name}\n   Qty: ${p.quantity} ${p.unit} | ₹${p.unit_price}/${p.unit} | ₹${p.total.toLocaleString("en-IN")}`
-      )
-      .join("\n\n");
+    try {
+      const blob = generateEstimatePDF(prods, null, null);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateStr = new Date().toISOString().split("T")[0];
+      a.download = `HomeRun_Material_List_${dateStr}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-    const content = `📋 *HomeRun Material List*
-Project: Materials Estimate
-Date: ${dateStr}
-
-━━━━━━━━━━━━━━━━━━━━
-${lines}
-━━━━━━━━━━━━━━━━━━━━
-Subtotal: ₹${total.toLocaleString("en-IN")}
-Delivery: FREE
-*Total: ₹${total.toLocaleString("en-IN")}*
-
-HomeRun — Delivered in 60 mins ⚡`;
-
-    const downloadMsg: Message = {
-      id: `asst-${Date.now()}`,
-      role: "assistant",
-      content,
-      timestamp: getTimeString(),
-    };
-    setMessages((prev) => [...prev, downloadMsg]);
+      if (setMessages) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `asst-${Date.now()}`,
+            role: "assistant",
+            content: `📄 Your material list PDF has been downloaded!\n\n💰 *Total: ₹${total.toLocaleString(
+              "en-IN"
+            )}*\n🚚 Free delivery\n\nHomeRun — Delivered in 60 mins ⚡`,
+            timestamp: getTimeString(),
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Failed to generate material list PDF:", error);
+      if (setMessages) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `asst-${Date.now()}`,
+            role: "assistant",
+            content: "⚠️ Sorry, I couldn't generate the PDF just now. Please try again.",
+            timestamp: getTimeString(),
+          },
+        ]);
+      }
+    }
   };
 
   // Flow Handler 3: User taps "Add All & Pay"

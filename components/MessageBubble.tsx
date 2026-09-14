@@ -58,7 +58,7 @@ function renderFormattedText(text: string) {
     if (numMatch) {
       return (
         <div key={i} className="flex items-start gap-1.5 ml-1 my-0.5">
-          <span className="font-semibold text-slate-500 text-xs min-w-[14px]">
+          <span className="font-semibold text-slate-500 min-w-[14px]">
             {numMatch[1]}.
           </span>
           <span className="flex-1">{formattedParts}</span>
