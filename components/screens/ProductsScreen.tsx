@@ -190,7 +190,7 @@ export default function ProductsScreen({
                   </div>
 
                   {/* Title */}
-                  <div className="text-xs font-bold text-slate-800 line-clamp-2 leading-tight mb-2 flex-1">
+                  <div className="text-xs font-bold text-slate-800 line-clamp-2 leading-tight mb-2">
                     {product.name}
                   </div>
 
