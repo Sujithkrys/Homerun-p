@@ -198,6 +198,11 @@ export async function POST(req: Request) {
     parsed.recommended_products = parsed.recommended_products || [];
     parsed.cart_items = parsed.cart_items || [];
     parsed.estimation_summary = parsed.estimation_summary || null;
+    // Guard against the model emitting a placeholder summary (e.g. total_cost: 0)
+    // while it's still asking a clarifying question instead of a real estimate.
+    if (parsed.estimation_summary && !parsed.estimation_summary.total_cost) {
+      parsed.estimation_summary = null;
+    }
 
     // Temporary debug log requested by user
     parsed._debug_provider = provider;

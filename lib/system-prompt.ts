@@ -117,6 +117,7 @@ Field rules:
 - "cart_items": Products the user has CONFIRMED they want. Only populate when the user explicitly says to add/order. These go directly into the cart.
 - Both should be empty arrays [] when not applicable.
 - estimation_summary should be null if not doing an estimation.
+- CRITICAL: estimation_summary must be null while you are still asking a clarifying question (e.g. confirming scope, area, or whether putty/primer is needed). NEVER emit estimation_summary with total_cost: 0 or any placeholder value — only include it once you have actually calculated a real, non-zero total_cost from the catalog.
 - Use ONLY products from the catalog. Never invent products or prices.
 - For estimations, use the estimation_rules from the catalog and add 10% wastage buffer.
 - Prices are in INR (₹).

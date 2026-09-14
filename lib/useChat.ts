@@ -52,7 +52,7 @@ export function getInitialGreeting(mode: "web" | "mobile" | "whatsapp" = "web"):
     content: isWhatsApp
       ? "👋 Welcome to HomeRun!\nBangalore's fastest construction material delivery — 60 mins to your site.\n\nHow can I help you today?"
       : "Hello! I am your **HomeRun Construction Assistant**.\n\nNeed cement, adhesives, paints, or electrical wiring delivered directly to your site in Bangalore? I can calculate estimations or dispatch materials to your doorstep in **60 minutes**.\n\nWhat can I get for you today?",
-    timestamp: "10:30 AM",
+    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
   };
 }
 
