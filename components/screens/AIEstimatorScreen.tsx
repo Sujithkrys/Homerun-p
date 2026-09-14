@@ -15,7 +15,6 @@ import {
   ChevronDown,
   Languages,
   Check,
-  X,
 } from "lucide-react";
 import { HomeRunThunder } from "../HomeRunLogo";
 
@@ -57,7 +56,6 @@ export default function AIEstimatorScreen({
   sessionEnded = false,
 }: AIEstimatorScreenProps) {
   const [inputText, setInputText] = useState(initialInput);
-  const [showMorePrompts, setShowMorePrompts] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [isVoiceThinking, setIsVoiceThinking] = useState(false);
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
@@ -95,7 +93,6 @@ export default function AIEstimatorScreen({
 
   const handleSelectQuickPrompt = (prompt: string) => {
     onSendMessage(prompt);
-    setShowMorePrompts(false);
   };
 
   return (
@@ -268,38 +265,27 @@ export default function AIEstimatorScreen({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Try Asking Preview (first line + 2 examples + a bar to see more) */}
+      {/* Try Asking — single horizontally-scrollable line */}
       {!sessionEnded && (
-        <div className="px-3 sm:px-4 pt-2 bg-white border-t border-[#f0f0f0] shrink-0">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-homerun-green" />
-            <span className="text-[11px] font-bold text-[#555555]">Try asking</span>
-          </div>
-          <div className="flex items-stretch gap-1.5">
-            {QUICK_PROMPTS.slice(0, 2).map((item, idx) => (
+        <div className="bg-white border-t border-[#f0f0f0] shrink-0 py-2">
+          <div className="flex items-center gap-2 px-3 sm:px-4 overflow-x-auto no-scrollbar">
+            <span className="flex items-center gap-1.5 shrink-0 text-[11px] font-bold text-[#555555]">
+              <Sparkles className="w-3.5 h-3.5 text-homerun-green" />
+              Try asking
+            </span>
+            {QUICK_PROMPTS.map((item, idx) => (
               <button
                 key={idx}
                 type="button"
                 disabled={isLoading}
                 onClick={() => handleSelectQuickPrompt(item.label)}
-                className="flex-1 min-w-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium bg-[#f8faf9] text-slate-700 rounded-lg border border-slate-200 hover:border-homerun-green hover:bg-homerun-green-light/40 transition-all disabled:opacity-50 cursor-pointer"
+                className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium bg-[#f8faf9] text-slate-700 rounded-lg border border-slate-200 hover:border-homerun-green hover:bg-homerun-green-light/40 transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap"
               >
-                <span className="shrink-0">{item.icon}</span>
-                <span className="truncate">{item.label}</span>
+                {item.icon}
+                <span>{item.label}</span>
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => setShowMorePrompts(true)}
-            className="w-full mt-1 flex flex-col items-center gap-0.5 py-1 cursor-pointer group"
-            aria-label="Show more estimate prompts"
-          >
-            <span className="w-9 h-1 rounded-full bg-slate-300 group-hover:bg-homerun-green transition-colors" />
-            <span className="text-[10px] font-semibold text-slate-400 group-hover:text-homerun-green transition-colors">
-              More estimates
-            </span>
-          </button>
         </div>
       )}
 
@@ -357,52 +343,6 @@ export default function AIEstimatorScreen({
         )}
       </div>
 
-      {/* Half-screen "More estimates" Sheet */}
-      <div
-        className={`absolute inset-0 z-40 transition-opacity duration-200 ${
-          showMorePrompts ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
-      >
-        <div className="absolute inset-0 bg-black/40" onClick={() => setShowMorePrompts(false)} />
-        <div
-          className={`absolute left-0 right-0 bottom-0 h-1/2 bg-white rounded-t-2xl shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
-            showMorePrompts ? "translate-y-0" : "translate-y-full"
-          }`}
-        >
-          <div className="flex items-center justify-center pt-2.5 pb-1 shrink-0">
-            <span className="w-10 h-1 rounded-full bg-slate-300" />
-          </div>
-          <div className="px-4 pb-2 flex items-center justify-between shrink-0">
-            <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-homerun-green" /> Try asking
-            </h4>
-            <button
-              type="button"
-              onClick={() => setShowMorePrompts(false)}
-              className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto px-4 pb-4">
-            <div className="flex flex-col gap-2">
-              {QUICK_PROMPTS.map((item, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  disabled={isLoading}
-                  onClick={() => handleSelectQuickPrompt(item.label)}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium bg-[#f8faf9] text-slate-700 rounded-xl border border-slate-200 hover:border-homerun-green hover:bg-homerun-green-light/40 transition-all text-left disabled:opacity-50 cursor-pointer"
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
