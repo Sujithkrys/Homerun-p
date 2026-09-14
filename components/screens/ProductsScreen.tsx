@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronLeft, Search, ShoppingCart } from "lucide-react";
+import { ChevronLeft, ChevronDown, Search, ShoppingCart } from "lucide-react";
 import { STRUCTURED_CATALOG, StructuredProduct } from "@/lib/structured-catalog";
 import VariantBottomSheet from "../VariantBottomSheet";
 import { CartItem } from "@/lib/types";
@@ -138,7 +138,7 @@ export default function ProductsScreen({
             key={filter}
             className="px-3 py-1.5 border border-slate-300 rounded-lg bg-white text-xs font-bold text-slate-700 flex items-center gap-1 shrink-0"
           >
-            {filter} <span className="text-slate-400">v</span>
+            {filter} <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           </button>
         ))}
       </div>
