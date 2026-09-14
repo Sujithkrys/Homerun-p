@@ -55,9 +55,24 @@ export function useSarvamVoice(mode: string = "default", preferredLanguage?: str
     console.log("[useSarvamVoice] Full session config:", JSON.stringify(configObject));
     console.log("[useSarvamVoice] agent_variables being sent:", JSON.stringify(configObject.agent_variables));
 
+    // Diagnostic only. The SDK's own compiled code (voice-agent.js) already
+    // calls audioInterface.interrupt() when it receives USER_INTERRUPT from
+    // the server — the mechanism looks complete reading the source (it stops
+    // every currently-scheduled AudioBufferSourceNode). What can't be
+    // confirmed by reading source is whether that call is actually reaching
+    // *this* instance at the right moment in a real browser session. Wrapping
+    // the method (rather than guessing at a fix) makes that directly
+    // observable: this log only fires if the SDK internally invokes it.
+    const audioInterface = new BrowserAudioInterface();
+    const originalInterrupt = audioInterface.interrupt.bind(audioInterface);
+    audioInterface.interrupt = () => {
+      console.log("[useSarvamVoice] audioInterface.interrupt() called by SDK at", new Date().toISOString());
+      originalInterrupt();
+    };
+
     const session = new ConversationAgent({
       apiKey: process.env.NEXT_PUBLIC_SARVAM_EMBED_KEY || "",
-      audioInterface: new BrowserAudioInterface(),
+      audioInterface,
       config: configObject,
       transcriptCallback: async (event: any) => {
         if (event.type === "server.event.transcription") {
@@ -90,6 +105,14 @@ export function useSarvamVoice(mode: string = "default", preferredLanguage?: str
           console.log("[useSarvamVoice] interaction_connected — server-acknowledged config:", JSON.stringify(event));
         } else if (event.type === "server.event.language_change") {
           console.log("[useSarvamVoice] language_change event:", JSON.stringify(event));
+        } else if (event.type === "server.event.user_interrupt") {
+          // Own log line (not just the generic fallback below) so it's easy
+          // to line this timestamp up against the
+          // "audioInterface.interrupt() called by SDK" log above — if that
+          // line is missing or arrives noticeably later than this one, the
+          // gap is the actual bug; if both fire together and audio still
+          // plays, the problem is downstream of our code entirely.
+          console.log("[useSarvamVoice] user_interrupt event received at", new Date().toISOString(), JSON.stringify(event));
         } else {
           console.log("[useSarvamVoice] event:", event.type, JSON.stringify(event));
         }
