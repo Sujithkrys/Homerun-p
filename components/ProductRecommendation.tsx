@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { CartItem } from "@/lib/types";
-import { Check, Plus, ShoppingCart } from "lucide-react";
+import { Check, Minus, Plus, ShoppingCart } from "lucide-react";
 
 interface ProductRecommendationProps {
   products: CartItem[];
@@ -16,6 +16,9 @@ export default function ProductRecommendation({
   onAddAllToCart,
 }: ProductRecommendationProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(products.map((p) => p.product_id)));
+  const [quantities, setQuantities] = useState<Record<string, number>>(() =>
+    Object.fromEntries(products.map((p) => [p.product_id, p.quantity]))
+  );
   const [addedMessage, setAddedMessage] = useState<string | null>(null);
 
   if (!products || products.length === 0) return null;
@@ -29,8 +32,21 @@ export default function ProductRecommendation({
     });
   };
 
+  const updateQuantity = (productId: string, delta: number) => {
+    setQuantities((prev) => {
+      const current = prev[productId] ?? 1;
+      const next = Math.max(1, current + delta);
+      return { ...prev, [productId]: next };
+    });
+  };
+
+  const withCurrentQuantity = (product: CartItem): CartItem => {
+    const quantity = quantities[product.product_id] ?? product.quantity;
+    return { ...product, quantity, total: quantity * product.unit_price };
+  };
+
   const addSelected = () => {
-    const selectedItems = products.filter((p) => selectedIds.has(p.product_id));
+    const selectedItems = products.filter((p) => selectedIds.has(p.product_id)).map(withCurrentQuantity);
     if (selectedItems.length === 0) return;
     selectedItems.forEach((p) => onAddToCart(p));
     setAddedMessage(`Added ${selectedItems.length} item${selectedItems.length > 1 ? "s" : ""} to cart!`);
@@ -38,15 +54,17 @@ export default function ProductRecommendation({
   };
 
   const addAll = () => {
-    onAddAllToCart(products);
+    onAddAllToCart(products.map(withCurrentQuantity));
     setAddedMessage(`Added all ${products.length} items to cart!`);
     setTimeout(() => setAddedMessage(null), 3000);
   };
 
-  const total = products.reduce((sum, p) => sum + p.total, 0);
+  const getTotal = (product: CartItem) => (quantities[product.product_id] ?? product.quantity) * product.unit_price;
+
+  const total = products.reduce((sum, p) => sum + getTotal(p), 0);
   const selectedTotal = products
     .filter((p) => selectedIds.has(p.product_id))
-    .reduce((sum, p) => sum + p.total, 0);
+    .reduce((sum, p) => sum + getTotal(p), 0);
 
   return (
     <div className="mt-3.5 space-y-2.5 pt-2.5 border-t border-slate-200/80 select-none font-sans">
@@ -71,6 +89,7 @@ export default function ProductRecommendation({
       <div className="space-y-2">
         {products.map((product) => {
           const isSelected = selectedIds.has(product.product_id);
+          const qty = quantities[product.product_id] ?? product.quantity;
           return (
             <div
               key={product.product_id}
@@ -98,18 +117,43 @@ export default function ProductRecommendation({
                   {product.name}
                 </div>
                 <div className="text-[11px] text-slate-500 font-medium mt-0.5">
-                  {product.quantity} {product.unit} × ₹{product.unit_price}
+                  {product.unit} × ₹{product.unit_price}
                 </div>
                 {product.reason && (
                   <div className="text-[10.5px] text-slate-400 mt-1 leading-snug italic">
                     {product.reason}
                   </div>
                 )}
+
+                {/* Quantity Stepper */}
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-2 inline-flex items-center border border-slate-200 rounded-lg overflow-hidden bg-slate-50 shrink-0"
+                >
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(product.product_id, -1)}
+                    disabled={qty <= 1}
+                    className="p-1.5 text-slate-600 hover:bg-slate-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+                  <span className="px-2.5 font-bold text-xs font-mono min-w-[24px] text-center">
+                    {qty}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => updateQuantity(product.product_id, 1)}
+                    className="p-1.5 text-slate-600 hover:bg-slate-200 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
 
               {/* Total Price */}
               <div className="text-xs sm:text-sm font-extrabold text-slate-900 shrink-0 mt-0.5">
-                ₹{product.total.toLocaleString("en-IN")}
+                ₹{getTotal(product).toLocaleString("en-IN")}
               </div>
             </div>
           );

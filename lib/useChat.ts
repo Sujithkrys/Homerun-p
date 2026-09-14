@@ -52,7 +52,11 @@ export function getInitialGreeting(mode: "web" | "mobile" | "whatsapp" = "web"):
     content: isWhatsApp
       ? "👋 Welcome to HomeRun!\nBangalore's fastest construction material delivery — 60 mins to your site.\n\nHow can I help you today?"
       : "Hello! I am your **HomeRun Construction Assistant**.\n\nNeed cement, adhesives, paints, or electrical wiring delivered directly to your site in Bangalore? I can calculate estimations or dispatch materials to your doorstep in **60 minutes**.\n\nWhat can I get for you today?",
-    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    // Left blank on purpose: computing the live time here would run once during
+    // server rendering and again during client hydration, producing two
+    // different strings and a React hydration mismatch. MessageBubble falls
+    // back to "Just now" until useChat's mount effect fills in the real time.
+    timestamp: "",
   };
 }
 
@@ -61,6 +65,17 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const lastVoiceCartCountRef = useRef(0);
+
+  // Fill in the greeting's live timestamp only after mount (client-side), so
+  // the server-rendered and hydrated HTML match on first paint.
+  useEffect(() => {
+    const liveTime = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    setMessages((prev) =>
+      prev.length === 1 && prev[0].id.startsWith(`init-${mode}`) && !prev[0].timestamp
+        ? [{ ...prev[0], timestamp: liveTime }]
+        : prev
+    );
+  }, [mode]);
 
   // Sync cart from Vercel KV
   const syncCart = async () => {
