@@ -153,7 +153,7 @@ export default function WebPlatform({
       />
 
       {/* Main Screen Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-w-0">
         {currentScreen === "home" && (
           <HomeScreen
             onNavigateToEstimator={handleNavigateToEstimatorWithPrompt}
@@ -214,7 +214,7 @@ export default function WebPlatform({
         {currentScreen === "ai-estimator" && (
           <div className="w-full flex h-full max-h-full overflow-hidden bg-white">
             {/* Left Panel: Chat Interface */}
-            <div className="flex-1 flex flex-col h-full border-r border-slate-200/80 bg-slate-50/50">
+            <div className="flex-1 flex flex-col h-full border-r border-slate-200/80 bg-slate-50/50 min-w-0">
               <div className="p-3.5 px-5 bg-white border-b border-slate-200/80 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-xl bg-homerun-green text-white flex items-center justify-center font-bold shadow-xs">
