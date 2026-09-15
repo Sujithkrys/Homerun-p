@@ -310,6 +310,50 @@ function safeSliceIndex(str: string, idx: number): number {
 const MALFORMED_OUTPUT_FALLBACK =
   "Sorry, I had trouble putting that reply together — could you try rephrasing your message?";
 
+// The model occasionally writes a cart_items entry using field names copied
+// from the CATALOG's own internal shape ("id"/"qty"/"price") instead of the
+// schema this endpoint actually requires ("product_id"/"quantity"/
+// "unit_price"/"total") — observed live for a product whose name contains a
+// "+" ("Jaquar Laguna Wash Basin Set + Mixer"). Left as-is, that reaches the
+// client as a structurally broken CartItem: no product_id to match against,
+// no total to bill. Rather than trust whichever field names the model
+// happened to use, resolve every item against the real catalog (by id, or
+// by name/substring) and rebuild it entirely from canonical catalog fields
+// plus just the quantity — dropping anything that can't be resolved to a
+// real product instead of letting invented or malformed data reach the cart.
+function normalizeCartItems(rawItems: any[]): any[] {
+  const normalized: any[] = [];
+  for (const item of rawItems || []) {
+    if (!item || typeof item !== "object") continue;
+
+    const candidateId = item.product_id || item.id;
+    let product = candidateId ? PRODUCT_CATALOG.find((p) => p.id === candidateId) : undefined;
+
+    if (!product && typeof item.name === "string") {
+      const lowerName = item.name.toLowerCase();
+      product =
+        PRODUCT_CATALOG.find((p) => p.name.toLowerCase() === lowerName) ||
+        PRODUCT_CATALOG.find(
+          (p) => lowerName.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(lowerName)
+        );
+    }
+
+    if (!product) continue; // no real catalog match — drop rather than expose broken/invented data
+
+    const quantity = Number(item.quantity ?? item.qty ?? 1) || 1;
+    normalized.push({
+      product_id: product.id,
+      name: product.name,
+      quantity,
+      unit: product.unit,
+      unit_price: product.price,
+      total: quantity * product.price,
+      ...(typeof item.reason === "string" ? { reason: item.reason } : {}),
+    });
+  }
+  return normalized;
+}
+
 // Validate cart items
 function validateCartItems(parsed: any, history: any[], message: string) {
   if (Array.isArray(parsed.cart_items) && parsed.cart_items.length > 0) {
@@ -359,6 +403,7 @@ function validateCartItems(parsed: any, history: any[], message: string) {
 // the same guarantees as the normal path, instead of silently defaulting to
 // empty cart_items/recommended_products.
 function finalizeParsedMetadata(parsed: any, msgText: string, userMessage: string, history: any[]) {
+  parsed.cart_items = normalizeCartItems(Array.isArray(parsed.cart_items) ? parsed.cart_items : []);
   parsed = validateCartItems(parsed, history, userMessage);
   parsed = reconcileCartItemsFromUserMessage(parsed, userMessage);
   parsed.recommended_products = extractRecommendedProductsFromText(
