@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { CheckCircle2, X, Sparkles, Info } from "lucide-react";
 
+import { HomeRunLogo } from "@/components/HomeRunLogo";
+
 export default function FeatureHighlightPopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
@@ -32,7 +34,7 @@ export default function FeatureHighlightPopup() {
         <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-white rounded-2xl shadow-2xl z-[101] overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-100">
           <div className="bg-homerun-green px-5 py-4 flex items-center justify-between relative">
             <div className="flex items-center gap-2 text-white">
-              <Sparkles className="w-5 h-5 text-homerun-yellow" />
+              <HomeRunLogo size={22} className="w-[22px] h-[22px] rounded-sm shadow-2xs bg-white" />
               <h2 className="font-extrabold text-lg tracking-tight font-display">
                 Welcome to HomeRun AI
               </h2>
@@ -75,6 +77,10 @@ export default function FeatureHighlightPopup() {
             >
               Got it
             </button>
+
+            <p className="text-[11px] text-slate-400 text-center mt-3 italic">
+              Built solo under a tight timeline — a few edge cases may still be rough. Thanks for trying it out!
+            </p>
           </div>
         </div>
       </>

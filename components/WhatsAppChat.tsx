@@ -239,7 +239,26 @@ https://rzp.io/l/homerun-order
 
     const lower = text.toLowerCase();
 
-    // 1. Human Escalation Keyword
+    // 1. Checkout keyword — handled deterministically, same reasoning as the
+    // numeric-selection and "all" handling further down: a transactional
+    // action like this shouldn't depend on the LLM correctly formatting a
+    // free-form reply. (It has: seen it return a broken tool-call-style
+    // block instead of the expected text+JSON format for this exact input.)
+    if (["checkout", "pay", "proceed to pay", "place order", "buy now"].includes(lower)) {
+      const userMsg: Message = {
+        id: `user-${Date.now()}`,
+        role: "user",
+        content: text,
+        timestamp: getTimeString(),
+      };
+      if (setMessages) {
+        setMessages((prev) => [...prev, userMsg]);
+      }
+      handleProceedToPay();
+      return;
+    }
+
+    // 2. Human Escalation Keyword
     if (lower === "agent" || lower === "human" || lower.includes("talk to human") || lower.includes("customer care")) {
       const userMsg: Message = {
         id: `user-${Date.now()}`,
@@ -259,7 +278,7 @@ https://rzp.io/l/homerun-order
       return;
     }
 
-    // 2. Check if user is replying with product numbers while selection is active
+    // 3. Check if user is replying with product numbers while selection is active
     // Or if recent messages contain recommended products
     const recentRecMsg = [...messages].reverse().find(
       (m) => m.role === "assistant" && m.recommended_products && m.recommended_products.length > 0

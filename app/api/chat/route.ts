@@ -225,6 +225,25 @@ function extractRecommendedProductsFromText(messageText: string, cartItems: any[
   return recommended;
 }
 
+// The model occasionally derails entirely — instead of the expected plain
+// text + "---JSON_START---" + JSON format, it emits something like a
+// tool-call/function-call block (e.g. "<tool_call><arg_key>...") that was
+// never meant to be shown to a user. Because that has no "---JSON_START---"
+// delimiter, the code above would otherwise treat the whole broken blob as
+// ordinary "safe text" and stream it straight into the chat bubble. This
+// heuristic catches that failure mode so it can be swapped for a clean
+// fallback instead: a legitimate conversational reply never starts with
+// "<" or "{", and never contains tool/function-call tag syntax.
+function looksMalformed(text: string): boolean {
+  const trimmed = text.trimStart();
+  if (trimmed.length === 0) return false;
+  if (trimmed[0] === "<" || trimmed[0] === "{") return true;
+  return /<\/?\s*(tool_call|arg_key|arg_value|function_call|invoke)\b/i.test(text);
+}
+
+const MALFORMED_OUTPUT_FALLBACK =
+  "Sorry, I had trouble putting that reply together — could you try rephrasing your message?";
+
 // Validate cart items
 function validateCartItems(parsed: any, history: any[], message: string) {
   if (Array.isArray(parsed.cart_items) && parsed.cart_items.length > 0) {
@@ -362,20 +381,45 @@ export async function POST(req: NextRequest) {
     let isJsonMode = false;
     let jsonBuffer = "";
 
+    // Before releasing any text live, hold back the first SNIFF_THRESHOLD
+    // characters to check for a malformed/tool-call-style derailment (see
+    // looksMalformed above) rather than streaming it straight to the user.
+    // Once past that check for a given response, the rest streams exactly
+    // as before — this only adds a few characters of buffering latency to
+    // the very start of a normal reply.
+    const SNIFF_THRESHOLD = 40;
+    let sniffed = false;
+    let suppressed = false;
+
     const validationStream = new TransformStream({
       transform(chunk, controller) {
         const text = decoder.decode(chunk, { stream: true });
         buffer += text;
         if (!isJsonMode) fullText += text;
 
+        if (suppressed) return; // already decided this response is broken
+
         if (!isJsonMode) {
+          if (!sniffed) {
+            if (buffer.trim().length === 0) return; // wait for real content
+            if (buffer.length < SNIFF_THRESHOLD && !looksMalformed(buffer)) {
+              return; // not enough signal yet, keep buffering silently
+            }
+            sniffed = true;
+            if (looksMalformed(buffer)) {
+              suppressed = true;
+              console.warn("[CHAT] Suppressed malformed model output:", buffer.slice(0, 200));
+              return;
+            }
+          }
+
           const splitIdx = buffer.indexOf("---JSON_START---");
           if (splitIdx !== -1) {
             isJsonMode = true;
             // Emit everything before the delimiter as text
             const before = buffer.slice(0, splitIdx);
             if (before) controller.enqueue(encoder.encode(before));
-            
+
             // The rest belongs to the JSON buffer
             jsonBuffer = buffer.slice(splitIdx + "---JSON_START---".length);
             // We also emit the delimiter itself so the frontend knows JSON is starting
@@ -396,6 +440,22 @@ export async function POST(req: NextRequest) {
         }
       },
       flush(controller) {
+        // Never expose a malformed/tool-call-derailed reply to the user,
+        // whether it was caught by the early sniff or only became clear
+        // once the (short) response had fully arrived.
+        if (suppressed || (!isJsonMode && looksMalformed(fullText))) {
+          if (!suppressed) {
+            console.warn("[CHAT] Suppressed malformed model output (late detection):", fullText.slice(0, 200));
+          }
+          const tail = JSON.stringify({
+            recommended_products: [],
+            cart_items: [],
+            estimation_summary: null,
+          });
+          controller.enqueue(encoder.encode(`${MALFORMED_OUTPUT_FALLBACK}---JSON_START---${tail}`));
+          return;
+        }
+
         // Emit any remaining safe text if we never hit JSON_START
         if (!isJsonMode && buffer.length > 0) {
           controller.enqueue(encoder.encode(buffer));
