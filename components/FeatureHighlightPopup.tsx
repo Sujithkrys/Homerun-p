@@ -60,7 +60,8 @@ export default function FeatureHighlightPopup() {
                 "Add products to your cart directly while talking to the voice agent.",
                 "Text chat works in the same languages, across Web, Mobile App, and WhatsApp views.",
                 "Get instant material estimates for tiling, painting, or wiring projects.",
-                "Orders are confirmed with live pricing pulled from the real product catalog."
+                "Orders are confirmed with live pricing pulled from the real product catalog.",
+                "Sessions automatically close after 5 minutes of inactivity to save resources."
               ].map((text, i) => (
                 <li key={i} className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-homerun-green shrink-0 mt-0.5" />
