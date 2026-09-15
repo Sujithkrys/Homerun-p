@@ -241,6 +241,21 @@ function looksMalformed(text: string): boolean {
   return /<\/?\s*(tool_call|arg_key|arg_value|function_call|invoke)\b/i.test(text);
 }
 
+// JS strings index by UTF-16 code unit, but a character outside the Basic
+// Multilingual Plane (most emoji, e.g. money-bag) is 2 code units (a
+// surrogate pair). Slicing a string at an arbitrary numeric offset can land
+// exactly between those two units — each half then encodes to the UTF-8
+// replacement character on its own, showing up as two broken glyphs in the
+// streamed text. Nudges a cutoff index back by one whenever it would split
+// a pair, so both units always stay on the same side.
+function safeSliceIndex(str: string, idx: number): number {
+  if (idx > 0 && idx < str.length) {
+    const code = str.charCodeAt(idx - 1);
+    if (code >= 0xd800 && code <= 0xdbff) return idx - 1; // idx-1 is a high surrogate
+  }
+  return idx;
+}
+
 const MALFORMED_OUTPUT_FALLBACK =
   "Sorry, I had trouble putting that reply together — could you try rephrasing your message?";
 
@@ -491,9 +506,10 @@ export async function POST(req: NextRequest) {
             // We must hold back enough chars to not accidentally split the delimiter.
             // "---JSON_START---" is 16 chars.
             if (buffer.length > 16) {
-              const safeText = buffer.slice(0, buffer.length - 16);
+              const cut = safeSliceIndex(buffer, buffer.length - 16);
+              const safeText = buffer.slice(0, cut);
               controller.enqueue(encoder.encode(safeText));
-              buffer = buffer.slice(buffer.length - 16);
+              buffer = buffer.slice(cut);
             }
           }
         } else {

@@ -10,6 +10,18 @@ import {
 } from "./types";
 import { getOrCreateSessionId } from "@/hooks/useSarvamVoice";
 
+// A character outside the Basic Multilingual Plane (most emoji) is a 2-unit
+// UTF-16 surrogate pair. Slicing a string at a plain numeric offset can land
+// between the two units, breaking the emoji into two garbled glyphs — this
+// nudges a cutoff index back by one whenever it would split a pair.
+function safeSliceIndex(str: string, idx: number): number {
+  if (idx > 0 && idx < str.length) {
+    const code = str.charCodeAt(idx - 1);
+    if (code >= 0xd800 && code <= 0xdbff) return idx - 1;
+  }
+  return idx;
+}
+
 export function mergeItemIntoCart(cart: CartItem[], newItem: CartItem): CartItem[] {
   const updated = [...cart];
   const existingIndex = updated.findIndex(
@@ -347,9 +359,10 @@ export function useChat(mode: "web" | "mobile" | "whatsapp" = "web") {
             } else {
               // Safe append: hold back 16 chars in case they are part of "---JSON_START---"
               if (textBuffer.length > 16) {
-                const safeText = textBuffer.slice(0, textBuffer.length - 16);
+                const cut = safeSliceIndex(textBuffer, textBuffer.length - 16);
+                const safeText = textBuffer.slice(0, cut);
                 currentText += safeText;
-                textBuffer = textBuffer.slice(textBuffer.length - 16);
+                textBuffer = textBuffer.slice(cut);
                 
                 setMessages((prev) => prev.map((msg) => 
                   msg.id === msgId ? { ...msg, content: currentText } : msg

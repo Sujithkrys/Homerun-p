@@ -239,12 +239,36 @@ https://rzp.io/l/homerun-order
 
     const lower = text.toLowerCase();
 
-    // 1. Checkout keyword — handled deterministically, same reasoning as the
+    // 1. Checkout — handled deterministically, same reasoning as the
     // numeric-selection and "all" handling further down: a transactional
     // action like this shouldn't depend on the LLM correctly formatting a
     // free-form reply. (It has: seen it return a broken tool-call-style
-    // block instead of the expected text+JSON format for this exact input.)
-    if (["checkout", "pay", "proceed to pay", "place order", "buy now"].includes(lower)) {
+    // block instead of the expected text+JSON format for this exact input,
+    // and separately, punt to "use the app/website" when the phrasing fell
+    // outside a short exact-match list — this demo's WhatsApp flow IS the
+    // complete purchase flow, so any reasonable way of saying "checkout"
+    // needs to land here, not just a handful of exact strings.)
+    const explicitCheckoutPhrase = [
+      "checkout",
+      "pay",
+      "proceed",
+      "proceed to pay",
+      "proceed to checkout",
+      "place order",
+      "buy now",
+      "confirm order",
+      "lets checkout",
+      "let's checkout",
+    ].includes(lower);
+
+    // A bare "yes"/"ok"/"done" etc. only means checkout when it's a direct
+    // reply to the bot's own "...ready to checkout?" follow-up — otherwise
+    // "yes" is ambiguous (could be confirming all sorts of other things).
+    const lastAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant");
+    const botJustAskedCheckout = !!lastAssistantMsg && /ready to (proceed to )?checkout|proceed to checkout/i.test(lastAssistantMsg.content || "");
+    const shortAffirmation = ["yes", "yep", "yeah", "sure", "ok", "okay", "go ahead", "confirm", "done"].includes(lower);
+
+    if (explicitCheckoutPhrase || (botJustAskedCheckout && shortAffirmation)) {
       const userMsg: Message = {
         id: `user-${Date.now()}`,
         role: "user",
