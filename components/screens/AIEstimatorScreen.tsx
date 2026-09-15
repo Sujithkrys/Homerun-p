@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Message, CartItem, Suggestion, SUPPORTED_LANGUAGES } from "@/lib/types";
 import MessageBubble from "../MessageBubble";
-import { QUICK_PROMPTS } from "../QuickActions";
+import { getQuickPrompts } from "../QuickActions";
 import { VoiceButton } from "../VoiceButton";
 import { useSarvamVoice } from "@/hooks/useSarvamVoice";
 import {
@@ -141,6 +141,8 @@ export default function AIEstimatorScreen({
   const handleSelectQuickPrompt = (prompt: string) => {
     onSendMessage(prompt);
   };
+
+  const quickPrompts = getQuickPrompts(selectedLanguage);
 
   return (
     <div className="w-full h-full flex-1 flex flex-col min-h-0 bg-[#fbfbfb] relative overflow-hidden">
@@ -316,7 +318,7 @@ export default function AIEstimatorScreen({
               <Sparkles className="w-3 h-3 text-homerun-green" />
               Try asking
             </span>
-            {QUICK_PROMPTS.map((item, idx) => (
+            {quickPrompts.map((item, idx) => (
               <button
                 key={idx}
                 type="button"

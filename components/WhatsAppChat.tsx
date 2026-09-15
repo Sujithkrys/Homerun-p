@@ -557,6 +557,7 @@ https://rzp.io/l/homerun-order
         onSelectPrompt={(p) => onSendMessage(p)}
         variant="whatsapp"
         disabled={isLoading}
+        language={selectedLanguage}
       />
 
       {/* WhatsApp Input Bar */}
