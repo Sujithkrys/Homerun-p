@@ -10,6 +10,7 @@ import { useNavigation } from "@/lib/useNavigation";
 import { useChat } from "@/lib/useChat";
 import { ExternalLink } from "lucide-react";
 import { HomeRunLogo } from "@/components/HomeRunLogo";
+import FeatureHighlightPopup from "@/components/FeatureHighlightPopup";
 
 export default function HomePage() {
   const [mode, setMode] = useState<DemoMode>("mobile");
@@ -187,6 +188,9 @@ export default function HomePage() {
           </span>
         </p>
       </footer>
+      
+      {/* Global Feature Highlights Popup */}
+      <FeatureHighlightPopup />
     </main>
   );
 }
