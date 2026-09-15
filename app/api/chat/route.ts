@@ -285,6 +285,68 @@ function validateCartItems(parsed: any, history: any[], message: string) {
   return parsed;
 }
 
+// Direct-order phrasing across the languages this app supports (matching the
+// romanized examples in system-prompt.ts's Language Rules) — used only to
+// gate when it's safe to deterministically backfill cart_items below.
+const DIRECT_ORDER_PATTERN = /\b(buy|order|purchase|book|add|give me|i want|i need|i'll take|ill take|chahiye|kavali|beku|venum)\b/i;
+
+// Rule 4 tells the model to populate cart_items immediately for a direct
+// order like "buy 10 bags UltraTech PPC cement" — but it has been observed
+// (live) to sometimes write a reply that CONFIRMS the addition in Part 1
+// text ("I've added 10 bags...") while leaving cart_items empty in its own
+// JSON, so nothing actually lands in the cart despite the user being told it
+// did. Rather than trust the model's JSON alone for something this
+// consequential, cross-check the user's OWN message: if it explicitly names
+// one specific catalog product together with both an order-intent verb and
+// a quantity, and that product isn't already in cart_items, backfill it from
+// the user's own words. This only ever fires for an unambiguous, explicitly
+// named single product + quantity — a vaguer request like "estimate for 10
+// bags of cement" has no order verb and is left alone.
+function reconcileCartItemsFromUserMessage(parsed: any, userMessage: string) {
+  const lowerUserMsg = userMessage.toLowerCase();
+  if (!DIRECT_ORDER_PATTERN.test(lowerUserMsg)) return parsed;
+
+  const cartItems = Array.isArray(parsed.cart_items) ? [...parsed.cart_items] : [];
+  const existingIds = new Set(cartItems.map((c: any) => c && c.product_id).filter(Boolean));
+  const existingNamesLower = cartItems
+    .filter((c: any) => c && typeof c.name === "string")
+    .map((c: any) => c.name.toLowerCase());
+
+  for (const product of PRODUCT_CATALOG) {
+    const coreName = product.name
+      .toLowerCase()
+      .replace(/\b(cement|adani|bag|bags|the|for|with)\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (coreName.length <= 3) continue;
+    const matchIdx = lowerUserMsg.indexOf(coreName);
+    if (matchIdx === -1) continue;
+    if (existingIds.has(product.id)) continue;
+    if (existingNamesLower.some((n) => n.includes(coreName) || coreName.includes(n))) continue;
+
+    // Look for a quantity close to THIS product's own mention (a single
+    // message can name several products with different quantities each) —
+    // rather than grabbing the first number anywhere in the whole message.
+    const windowBefore = lowerUserMsg.slice(Math.max(0, matchIdx - 20), matchIdx);
+    const windowAfter = lowerUserMsg.slice(matchIdx + coreName.length, matchIdx + coreName.length + 20);
+    const qtyMatch = windowBefore.match(/(\d+(?:\.\d+)?)\D*$/) || windowAfter.match(/^\D*(\d+(?:\.\d+)?)/);
+    if (!qtyMatch) continue; // no nearby quantity — too ambiguous to safely backfill this one
+
+    const quantity = parseFloat(qtyMatch[1]);
+    cartItems.push({
+      product_id: product.id,
+      name: product.name,
+      quantity,
+      unit: product.unit,
+      unit_price: product.price,
+      total: quantity * product.price,
+    });
+  }
+
+  parsed.cart_items = cartItems;
+  return parsed;
+}
+
 export async function POST(req: NextRequest) {
   const provider = getProvider();
 
@@ -487,7 +549,8 @@ export async function POST(req: NextRequest) {
           }
 
           parsed = validateCartItems(parsed, history || [], message);
-          
+          parsed = reconcileCartItemsFromUserMessage(parsed, message);
+
           // --- NEW RULE: Enforce deterministic recommended_products ---
           // Always compute recommended_products directly from the assistant's message text
           // to completely sidestep the LLM's unreliability in returning the JSON array.
