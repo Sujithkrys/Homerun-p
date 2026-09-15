@@ -68,11 +68,11 @@ export default function ProductRecommendation({
     .reduce((sum, p) => sum + getTotal(p), 0);
 
   return (
-    <div className="mt-3.5 space-y-2.5 pt-2.5 border-t border-slate-200/80 select-none font-sans">
+    <div className="mt-3 space-y-2 pt-2 border-t border-slate-200/80 select-none font-sans">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <span className="text-sm font-bold text-slate-800">
+          <span className="text-xs font-bold text-slate-800">
             Recommended Products ({products.length})
           </span>
         </div>
@@ -82,20 +82,28 @@ export default function ProductRecommendation({
       </div>
 
       {/* Subtitle helper */}
-      <p className="text-[11.5px] text-slate-500 font-medium leading-tight">
+      <p className="text-[11px] text-slate-500 font-medium leading-tight">
         Select the items you need, then click Add to Cart:
       </p>
 
-      {/* Product cards */}
-      <div className="space-y-2">
+      {/* Product cards — kept compact so a multi-item list still leaves the
+          Add Selected / Add All buttons reachable without much scrolling. */}
+      <div className="space-y-1.5">
         {products.map((product) => {
           const isSelected = selectedIds.has(product.product_id);
           const qty = quantities[product.product_id] ?? product.quantity;
+          // "Suggested option" is a boilerplate placeholder the server fills
+          // in for every deterministically-matched product (see
+          // extractRecommendedProductsFromText in app/api/chat/route.ts) —
+          // showing it on every single card added a redundant line with no
+          // real information, only real (non-generic) reasons are worth the
+          // extra row.
+          const hasRealReason = product.reason && product.reason.trim().toLowerCase() !== "suggested option";
           return (
             <div
               key={product.product_id}
               onClick={() => toggleSelect(product.product_id)}
-              className={`flex items-start gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer transition-all ${
+              className={`flex items-start gap-2 p-2 rounded-lg border cursor-pointer transition-all ${
                 isSelected
                   ? "border-[#1a7a3a] bg-[#e8f5e9]/50 shadow-2xs"
                   : "border-slate-200 bg-white hover:border-slate-300"
@@ -103,57 +111,58 @@ export default function ProductRecommendation({
             >
               {/* Checkbox */}
               <div
-                className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                   isSelected
                     ? "border-[#1a7a3a] bg-[#1a7a3a] text-white"
                     : "border-slate-300 bg-white"
                 }`}
               >
-                {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
               </div>
 
               {/* Product info */}
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-xs sm:text-sm text-slate-900 leading-snug">
+                <div className="font-bold text-xs text-slate-900 leading-snug">
                   {product.name}
                 </div>
-                <div className="text-[11px] text-slate-500 font-medium mt-0.5">
-                  {product.unit} × ₹{product.unit_price}
+                <div className="flex items-center justify-between gap-2 mt-1">
+                  <span className="text-[10.5px] text-slate-500 font-medium">
+                    {product.unit} × ₹{product.unit_price}
+                  </span>
+                  {/* Quantity Stepper — same row as unit/price to save a line */}
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center border border-slate-200 rounded-md overflow-hidden bg-slate-50 shrink-0"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(product.product_id, -1)}
+                      disabled={qty <= 1}
+                      className="p-1 text-slate-600 hover:bg-slate-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                    >
+                      <Minus className="w-2.5 h-2.5" />
+                    </button>
+                    <span className="px-2 font-bold text-[11px] font-mono min-w-[20px] text-center">
+                      {qty}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(product.product_id, 1)}
+                      className="p-1 text-slate-600 hover:bg-slate-200 transition-colors"
+                    >
+                      <Plus className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
                 </div>
-                {product.reason && (
-                  <div className="text-[10.5px] text-slate-400 mt-1 leading-snug italic">
+                {hasRealReason && (
+                  <div className="text-[10px] text-slate-400 mt-1 leading-snug italic line-clamp-1">
                     {product.reason}
                   </div>
                 )}
-
-                {/* Quantity Stepper */}
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="mt-2 inline-flex items-center border border-slate-200 rounded-lg overflow-hidden bg-slate-50 shrink-0"
-                >
-                  <button
-                    type="button"
-                    onClick={() => updateQuantity(product.product_id, -1)}
-                    disabled={qty <= 1}
-                    className="p-1.5 text-slate-600 hover:bg-slate-200 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
-                  >
-                    <Minus className="w-3 h-3" />
-                  </button>
-                  <span className="px-2.5 font-bold text-xs font-mono min-w-[24px] text-center">
-                    {qty}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => updateQuantity(product.product_id, 1)}
-                    className="p-1.5 text-slate-600 hover:bg-slate-200 transition-colors"
-                  >
-                    <Plus className="w-3 h-3" />
-                  </button>
-                </div>
               </div>
 
               {/* Total Price */}
-              <div className="text-xs sm:text-sm font-extrabold text-slate-900 shrink-0 mt-0.5">
+              <div className="text-xs font-extrabold text-slate-900 shrink-0 mt-0.5">
                 ₹{getTotal(product).toLocaleString("en-IN")}
               </div>
             </div>
