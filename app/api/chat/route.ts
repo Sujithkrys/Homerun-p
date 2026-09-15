@@ -300,6 +300,23 @@ function validateCartItems(parsed: any, history: any[], message: string) {
   return parsed;
 }
 
+// Runs the full deterministic pipeline (cart-item validation, the direct-
+// order backfill, and the recommended_products extraction) on top of
+// whatever base object is passed in — `{}` when the model produced no
+// usable JSON at all. Centralized so every code path that can end up
+// without valid model JSON (missing delimiter, unparsable JSON) still gets
+// the same guarantees as the normal path, instead of silently defaulting to
+// empty cart_items/recommended_products.
+function finalizeParsedMetadata(parsed: any, msgText: string, userMessage: string, history: any[]) {
+  parsed = validateCartItems(parsed, history, userMessage);
+  parsed = reconcileCartItemsFromUserMessage(parsed, userMessage);
+  parsed.recommended_products = extractRecommendedProductsFromText(
+    msgText,
+    Array.isArray(parsed.cart_items) ? parsed.cart_items : []
+  );
+  return parsed;
+}
+
 // Direct-order phrasing across the languages this app supports (matching the
 // romanized examples in system-prompt.ts's Language Rules) — used only to
 // gate when it's safe to deterministically backfill cart_items below.
@@ -539,47 +556,64 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(buffer));
         }
 
-        // Parse and validate the JSON buffer
-        if (isJsonMode && jsonBuffer.trim().length > 0) {
-          let parsed;
-          let jsonStr = jsonBuffer;
-          // First try to just extract a JSON object directly since that's safest
-          const extracted = extractFirstJsonObject(jsonStr);
-          if (extracted) {
-             jsonStr = extracted;
-          } else {
-             // Fallback to stripping markdown if extractFirstJsonObject failed
-             if (jsonStr.includes("```json")) {
-               jsonStr = jsonStr.split("```json")[1].split("```")[0].trim();
-             } else if (jsonStr.includes("```")) {
-               const parts = jsonStr.split("```");
-               jsonStr = parts.length > 1 ? parts[1].trim() : parts[0].trim();
-             }
-          }
-          try {
-            parsed = JSON.parse(jsonStr);
-          } catch {
-            console.warn(`Failed to parse JSON buffer, yielding raw buffer as fallback`);
-            controller.enqueue(encoder.encode(jsonBuffer));
-            return;
-          }
+        const splitIdx = fullText.indexOf("---JSON_START---");
+        const msgText = splitIdx !== -1 ? fullText.slice(0, splitIdx) : fullText;
+        const emptyBase = { cart_items: [], recommended_products: [], estimation_summary: null };
 
-          parsed = validateCartItems(parsed, history || [], message);
-          parsed = reconcileCartItemsFromUserMessage(parsed, message);
-
-          // --- NEW RULE: Enforce deterministic recommended_products ---
-          // Always compute recommended_products directly from the assistant's message text
-          // to completely sidestep the LLM's unreliability in returning the JSON array.
-          const splitIdx = fullText.indexOf("---JSON_START---");
-          const msgText = splitIdx !== -1 ? fullText.slice(0, splitIdx) : fullText;
-          parsed.recommended_products = extractRecommendedProductsFromText(
-            msgText,
-            Array.isArray(parsed.cart_items) ? parsed.cart_items : []
-          );
-          
-          // Emit the validated JSON string
-          controller.enqueue(encoder.encode(JSON.stringify(parsed)));
+        // The model sometimes never emits "---JSON_START---" at all — e.g. it
+        // gets wordy on a tangent (a "bulk pricing" alternative, in one
+        // observed case) and never reaches Part 2. Previously this meant the
+        // client got no metadata whatsoever: an empty cart_items even for a
+        // direct "buy 10 bags X" that should have landed in the cart. Still
+        // run the full deterministic pipeline against the reply text/user
+        // message and synthesize a JSON tail, instead of leaving the client
+        // with nothing.
+        if (!isJsonMode) {
+          const synthesized = finalizeParsedMetadata(emptyBase, msgText, message, history || []);
+          controller.enqueue(encoder.encode(`---JSON_START---${JSON.stringify(synthesized)}`));
+          return;
         }
+
+        // isJsonMode is true from here — the model did emit the delimiter.
+        if (jsonBuffer.trim().length === 0) {
+          // Delimiter arrived but nothing followed it — same deterministic fallback.
+          const synthesized = finalizeParsedMetadata(emptyBase, msgText, message, history || []);
+          controller.enqueue(encoder.encode(JSON.stringify(synthesized)));
+          return;
+        }
+
+        let parsed;
+        let jsonStr = jsonBuffer;
+        // First try to just extract a JSON object directly since that's safest
+        const extracted = extractFirstJsonObject(jsonStr);
+        if (extracted) {
+           jsonStr = extracted;
+        } else {
+           // Fallback to stripping markdown if extractFirstJsonObject failed
+           if (jsonStr.includes("```json")) {
+             jsonStr = jsonStr.split("```json")[1].split("```")[0].trim();
+           } else if (jsonStr.includes("```")) {
+             const parts = jsonStr.split("```");
+             jsonStr = parts.length > 1 ? parts[1].trim() : parts[0].trim();
+           }
+        }
+        try {
+          parsed = JSON.parse(jsonStr);
+        } catch {
+          // The model's own JSON was unparsable. Previously this dumped the
+          // raw (broken) jsonBuffer straight into the chat as if it were
+          // text — both a visible leak risk AND, same as the missing-
+          // delimiter case above, a silent empty cart_items for what may
+          // have been a real "buy X" order. Fall back to the same
+          // deterministic reconstruction instead.
+          console.warn("Failed to parse JSON buffer, falling back to deterministic metadata");
+          const synthesized = finalizeParsedMetadata(emptyBase, msgText, message, history || []);
+          controller.enqueue(encoder.encode(JSON.stringify(synthesized)));
+          return;
+        }
+
+        parsed = finalizeParsedMetadata(parsed, msgText, message, history || []);
+        controller.enqueue(encoder.encode(JSON.stringify(parsed)));
       }
     });
 
