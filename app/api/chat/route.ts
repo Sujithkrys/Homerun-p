@@ -174,10 +174,51 @@ function extractFirstJsonObject(str: string): string | null {
   return null;
 }
 
+// Recognizes a number written right before this product's own catalog unit
+// (e.g. "15 bags", "~25 kg", "6 litres") so a recommended product reflects
+// the quantity actually mentioned in the text instead of always defaulting
+// to 1. Deliberately keyed to the PRODUCT's own unit (not a generic list of
+// every unit word) — a line like "15 bags ... (covers ~32 sqft per bag)"
+// names an area figure too, and matching on this product's real unit
+// ("bag") rather than any number+word pattern avoids picking up unrelated
+// coverage/area numbers from later in the same line.
+const UNIT_WORD_ALIASES: Record<string, string> = {
+  bag: "bags?",
+  kg: "kgs?|kilograms?",
+  litre: "litres?|liters?",
+  liter: "litres?|liters?",
+  pack: "packs?",
+  roll: "rolls?",
+  piece: "pieces?|pcs?",
+  box: "boxes?",
+  meter: "met(?:er|re)s?",
+  metre: "met(?:er|re)s?",
+  unit: "units?",
+  set: "sets?",
+  pair: "pairs?",
+};
+
+// Catches cases where the catalog's own sale unit (e.g. "pack") differs from
+// the physical measure the model naturally writes when explaining an
+// estimate (e.g. "14 kg" for a grout that happens to be packaged 1kg per
+// pack) — falls back to any recognized measure word rather than only the
+// exact catalog unit.
+const ANY_MEASURE_UNIT_RE = /(\d+(?:\.\d+)?)\s*(?:bags?|kgs?|kilograms?|litres?|liters?|packs?|rolls?|pieces?|pcs?|boxes?|bottles?|sets?|pairs?|units?|nos?|met(?:er|re)s?)\b/i;
+
+function extractQuantityNearUnit(line: string, unit: string): number {
+  const unitWord = UNIT_WORD_ALIASES[unit.toLowerCase()] || unit.toLowerCase().replace(/[^a-z]/g, "");
+  if (unitWord) {
+    const re = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(?:${unitWord})\\b`, "i");
+    const match = line.match(re);
+    if (match) return parseFloat(match[1]);
+  }
+  const fallback = line.match(ANY_MEASURE_UNIT_RE);
+  return fallback ? parseFloat(fallback[1]) : 1;
+}
+
 // Extract recommended products from message text
 function extractRecommendedProductsFromText(messageText: string, cartItems: any[] = []) {
   const recommended: any[] = [];
-  const lowerMsg = messageText.toLowerCase();
 
   // Products the model just put in cart_items (e.g. "buy 10 bags of X" gets
   // added directly) are almost always ALSO named in the reply's confirmation
@@ -190,16 +231,26 @@ function extractRecommendedProductsFromText(messageText: string, cartItems: any[
     .filter((c) => c && typeof c.name === "string")
     .map((c) => c.name.toLowerCase());
 
-  for (const product of PRODUCT_CATALOG) {
-    const pName = product.name.toLowerCase();
+  // Line-by-line rather than the whole message as one blob: each product
+  // suggestion is normally its own bullet/line, and the quantity mentioned
+  // on that line (e.g. "Wall tile adhesive — 15 bags ... Good option: Roff
+  // T02 NSA Non-Skid Adhesive") belongs to whichever product that line
+  // names, not to products named on other lines.
+  const lines = messageText.split("\n");
+  for (const rawLine of lines) {
+    const lowerLine = rawLine.toLowerCase();
 
-    // Remove common generic words and normalize spacing to create a distinctive core phrase
-    const coreName = pName
-      .replace(/\b(cement|adani|bag|bags|the|for|with)\b/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
+    for (const product of PRODUCT_CATALOG) {
+      const pName = product.name.toLowerCase();
 
-    if (coreName.length > 3 && lowerMsg.includes(coreName)) {
+      // Remove common generic words and normalize spacing to create a distinctive core phrase
+      const coreName = pName
+        .replace(/\b(cement|adani|bag|bags|the|for|with)\b/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (coreName.length <= 3 || !lowerLine.includes(coreName)) continue;
+
       // Match on the same core phrase (not product_id) since cart_items'
       // product_id comes from the LLM's own free-text JSON and can drift
       // from the catalog id used here — the name is the reliable signal.
@@ -207,18 +258,18 @@ function extractRecommendedProductsFromText(messageText: string, cartItems: any[
         (cn) => cn.includes(coreName) || coreName.includes(cn)
       );
       if (alreadyInCart) continue;
+      if (recommended.find(r => r.product_id === product.id)) continue;
 
-      if (!recommended.find(r => r.product_id === product.id)) {
-        recommended.push({
-          product_id: product.id,
-          name: product.name,
-          quantity: 1, // Default quantity for display
-          unit: product.unit,
-          unit_price: product.price,
-          total: product.price,
-          reason: "Suggested option"
-        });
-      }
+      const quantity = extractQuantityNearUnit(lowerLine, product.unit);
+      recommended.push({
+        product_id: product.id,
+        name: product.name,
+        quantity,
+        unit: product.unit,
+        unit_price: product.price,
+        total: quantity * product.price,
+        reason: "Suggested option"
+      });
     }
   }
 

@@ -10,13 +10,22 @@ export default function FeatureHighlightPopup() {
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    // Automatically show the popup a moment after the page loads
-    const timer = setTimeout(() => {
-      setIsOpen(true);
+    // Check if we've already shown the popup in this tab session
+    const hasSeenPopup = sessionStorage.getItem("homerun_has_seen_welcome_popup");
+    
+    if (hasSeenPopup) {
+      // If they've seen it, just show the floating button
+      setIsOpen(false);
       setHasMounted(true);
-    }, 600);
-
-    return () => clearTimeout(timer);
+    } else {
+      // If it's a fresh session, show the popup after a brief delay
+      const timer = setTimeout(() => {
+        setIsOpen(true);
+        setHasMounted(true);
+        sessionStorage.setItem("homerun_has_seen_welcome_popup", "true");
+      }, 600);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   if (!hasMounted) return null;
