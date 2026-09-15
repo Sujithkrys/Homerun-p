@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Message, CartItem, Suggestion } from "@/lib/types";
-import { CheckCheck, ShoppingBag, CreditCard, PlusCircle, Calculator, Minus, Plus } from "lucide-react";
+import { CheckCheck, ShoppingBag, CreditCard, PlusCircle, Calculator, Minus, Plus, ShoppingCart, ChevronDown } from "lucide-react";
 import ProjectEstimateCard from "./ProjectEstimateCard";
 import SuggestionChips from "./SuggestionChips";
 import DownloadEstimateButton from "./DownloadEstimateButton";
@@ -285,6 +285,12 @@ export default function MessageBubble({
   const hasCartItems = message.cart_items && message.cart_items.length > 0;
   const time = message.timestamp || "Just now";
 
+  // Recommended products default to collapsed behind a toggle — the reply
+  // text + estimation summary is "the main one" and always visible; the
+  // interactive per-product cards (quantity steppers, Add to Cart) only take
+  // up space once the user actually asks to see them.
+  const [showRecommended, setShowRecommended] = useState(false);
+
   // Calculate cart total for WhatsApp in-bubble cart card
   const itemsToDisplay = (message.cart_items && message.cart_items.length > 0)
     ? message.cart_items
@@ -524,19 +530,49 @@ export default function MessageBubble({
           </div>
         )}
 
-        {/* Recommended Products with Selectable Checkboxes (Web & Mobile) */}
+        {/* Recommended Products — collapsed behind a toggle by default (Web & Mobile).
+            The reply text and estimation summary above are the "main" result;
+            this stays out of the way until the user actually wants to browse
+            and add specific items. */}
         {!isUser && pendingRecommended.length > 0 && (
-          <ProductRecommendation
-            products={pendingRecommended}
-            onAddAllToCart={onAddAllToCart || ((items) => items.forEach(p => (onAddToCart ? onAddToCart(p) : onAddSuggestion?.({
-              product_id: p.product_id,
-              name: p.name,
-              reason: p.reason || "",
-              estimated_qty: p.quantity,
-              unit: p.unit,
-              unit_price: p.unit_price,
-            }))))}
-          />
+          <div className="mt-3 pt-2.5 border-t border-slate-200/80">
+            <button
+              type="button"
+              onClick={() => setShowRecommended((v) => !v)}
+              className="w-full flex items-center justify-between gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 active:scale-[0.99] transition-all cursor-pointer"
+            >
+              <span className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                <ShoppingCart className="w-3.5 h-3.5 text-[#1a7a3a]" />
+                {showRecommended
+                  ? "Hide recommended products"
+                  : `Recommended Products (${pendingRecommended.length})`}
+              </span>
+              <span className="flex items-center gap-1.5">
+                {!showRecommended && (
+                  <span className="text-xs font-extrabold text-[#1a7a3a]">
+                    ₹{pendingRecommended.reduce((s, i) => s + i.total, 0).toLocaleString("en-IN")}
+                  </span>
+                )}
+                <ChevronDown
+                  className={`w-4 h-4 text-slate-500 transition-transform ${showRecommended ? "rotate-180" : ""}`}
+                />
+              </span>
+            </button>
+
+            {showRecommended && (
+              <ProductRecommendation
+                products={pendingRecommended}
+                onAddAllToCart={onAddAllToCart || ((items) => items.forEach(p => (onAddToCart ? onAddToCart(p) : onAddSuggestion?.({
+                  product_id: p.product_id,
+                  name: p.name,
+                  reason: p.reason || "",
+                  estimated_qty: p.quantity,
+                  unit: p.unit,
+                  unit_price: p.unit_price,
+                }))))}
+              />
+            )}
+          </div>
         )}
 
         {/* Added to Cart Items List (Web & Mobile) */}
