@@ -68,10 +68,8 @@ export default function ProductRecommendation({
     .reduce((sum, p) => sum + getTotal(p), 0);
 
   return (
-    <div className="mt-2 space-y-2 select-none font-sans">
-      {/* Header — the collapsible toggle in MessageBubble already shows the
-          item count and total while collapsed, so this repeats it only once
-          the list is actually open (helpful context right above the cards). */}
+    <div className="space-y-2 select-none font-sans">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-bold text-slate-800">
