@@ -34,7 +34,7 @@ export default function FeatureHighlightPopup() {
         <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md bg-white rounded-2xl shadow-2xl z-[101] overflow-hidden animate-in zoom-in-95 duration-300 border border-slate-100">
           <div className="bg-homerun-green px-5 py-4 flex items-center justify-between relative">
             <div className="flex items-center gap-2 text-white">
-              <HomeRunLogo size={22} className="w-[22px] h-[22px] rounded-sm shadow-2xs bg-white" />
+              <HomeRunLogo size={22} className="w-[22px] h-[22px] rounded-sm shadow-2xs" />
               <h2 className="font-extrabold text-lg tracking-tight font-display">
                 Welcome to HomeRun AI
               </h2>
