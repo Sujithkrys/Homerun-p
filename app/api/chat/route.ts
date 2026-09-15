@@ -175,20 +175,39 @@ function extractFirstJsonObject(str: string): string | null {
 }
 
 // Extract recommended products from message text
-function extractRecommendedProductsFromText(messageText: string) {
+function extractRecommendedProductsFromText(messageText: string, cartItems: any[] = []) {
   const recommended: any[] = [];
   const lowerMsg = messageText.toLowerCase();
 
+  // Products the model just put in cart_items (e.g. "buy 10 bags of X" gets
+  // added directly) are almost always ALSO named in the reply's confirmation
+  // sentence ("I've added 10 bags of X..."). Matching against the reply text
+  // alone can't tell "still just being suggested" apart from "already
+  // ordered" — so anything already in cart_items is excluded here rather
+  // than being re-added as a "recommendation" defaulted to quantity 1, which
+  // silently contradicted the real (correct) quantity already in the cart.
+  const cartNamesLower = cartItems
+    .filter((c) => c && typeof c.name === "string")
+    .map((c) => c.name.toLowerCase());
+
   for (const product of PRODUCT_CATALOG) {
     const pName = product.name.toLowerCase();
-    
+
     // Remove common generic words and normalize spacing to create a distinctive core phrase
     const coreName = pName
       .replace(/\b(cement|adani|bag|bags|the|for|with)\b/g, '')
       .replace(/\s+/g, ' ')
       .trim();
-    
+
     if (coreName.length > 3 && lowerMsg.includes(coreName)) {
+      // Match on the same core phrase (not product_id) since cart_items'
+      // product_id comes from the LLM's own free-text JSON and can drift
+      // from the catalog id used here — the name is the reliable signal.
+      const alreadyInCart = cartNamesLower.some(
+        (cn) => cn.includes(coreName) || coreName.includes(cn)
+      );
+      if (alreadyInCart) continue;
+
       if (!recommended.find(r => r.product_id === product.id)) {
         recommended.push({
           product_id: product.id,
@@ -414,7 +433,10 @@ export async function POST(req: NextRequest) {
           // to completely sidestep the LLM's unreliability in returning the JSON array.
           const splitIdx = fullText.indexOf("---JSON_START---");
           const msgText = splitIdx !== -1 ? fullText.slice(0, splitIdx) : fullText;
-          parsed.recommended_products = extractRecommendedProductsFromText(msgText);
+          parsed.recommended_products = extractRecommendedProductsFromText(
+            msgText,
+            Array.isArray(parsed.cart_items) ? parsed.cart_items : []
+          );
           
           // Emit the validated JSON string
           controller.enqueue(encoder.encode(JSON.stringify(parsed)));
