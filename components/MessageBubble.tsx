@@ -180,6 +180,49 @@ function tableRowCells(line: string): string[] | null {
   return cells.length > 0 ? cells : null;
 }
 
+// The model is prompted to write a per-product bulleted price breakdown
+// directly into its reply text (e.g. "- **Roff T09 NSA White Adhesive** — 4
+// bag × ₹615 = ₹2,460") so a deterministic server-side pass can reliably
+// extract quantities near each product's own unit — that raw text is the
+// data source recommended_products is built from. But once it's parsed,
+// showing the same breakdown AGAIN as plain text right above the
+// interactive Recommended Products card (which already displays each
+// product, its quantity, and its price) is pure duplication. Strip lines
+// that are clearly part of that generated breakdown — a bulleted line
+// naming a product already in the recommendation list, or a standalone
+// Subtotal/Total line — so the reply text stays a short, conversational
+// intro instead of restating the itemized numbers the card already shows.
+function stripRedundantProductBreakdown(content: string, products: { name: string }[]): string {
+  if (!products || products.length === 0) return content;
+  const productNamesLower = products
+    .map((p) => p.name?.toLowerCase())
+    .filter((n): n is string => !!n);
+  if (productNamesLower.length === 0) return content;
+
+  const lines = content.split("\n");
+  const kept = lines.filter((line) => {
+    const trimmed = line.trim();
+    const bare = trimmed.replace(/\*/g, "").trim();
+
+    // Standalone "Subtotal: ₹X" / "Total: ₹X" lines — the card's own header
+    // already totals the same items.
+    if (/^(subtotal|total)\s*:?\s*₹/i.test(bare)) return false;
+
+    // A bulleted line naming one of the recommended products AND carrying
+    // price-breakdown syntax (₹, "×", or "=") — narrative bullets that don't
+    // match a known product, or don't look like pricing math, are left alone.
+    const isBullet = trimmed.startsWith("- ") || trimmed.startsWith("• ");
+    if (!isBullet) return true;
+    const lowerBare = bare.toLowerCase();
+    const mentionsKnownProduct = productNamesLower.some((name) => lowerBare.includes(name));
+    const looksLikePriceLine = /₹|×|=/.test(trimmed);
+    return !(mentionsKnownProduct && looksLikePriceLine);
+  });
+
+  // Collapse any now-consecutive blank lines left behind by removed bullets.
+  return kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 // Simple markdown formatter helper for bold, bullets, and line breaks
 function renderFormattedText(text: string) {
   const lines = text.split("\n");
@@ -303,6 +346,15 @@ export default function MessageBubble({
   const pendingRecommended = (message.recommended_products || []).filter(
     (p) => !addedProductIds.has(p.product_id)
   );
+
+  // In-app (Web & Mobile) only: once the Recommended Products card is about
+  // to render below, the reply text's own per-item bullet breakdown just
+  // repeats the same names/quantities/prices the card already shows — strip
+  // it so the bubble reads as a short intro instead of a duplicate estimate.
+  const displayContent =
+    !isUser && variant !== "whatsapp" && pendingRecommended.length > 0
+      ? stripRedundantProductBreakdown(message.content, pendingRecommended)
+      : message.content;
 
   // ================= WHATSAPP VARIANT =================
   if (variant === "whatsapp") {
@@ -494,7 +546,7 @@ export default function MessageBubble({
       >
         {/* Main Content */}
         <div className="text-[13.5px] leading-relaxed break-words">
-          {renderFormattedText(message.content)}
+          {renderFormattedText(displayContent)}
         </div>
 
         {/* Single Estimation Summary Badge if available & not a multi-room project */}
@@ -538,7 +590,26 @@ export default function MessageBubble({
                 unit_price: p.unit_price,
               }))))}
             />
+            <DownloadEstimateButton
+              items={itemsToDisplay}
+              projectEstimate={message.project_estimate}
+              estimationSummary={message.estimation_summary}
+              variant="in-app"
+            />
           </div>
+        )}
+
+        {/* Download Estimate Button — only when there's no recommended-
+            products card above (which already carries its own download
+            button right under it). Self-hides when there's nothing to
+            export (see DownloadEstimateButton's own shouldShow check). */}
+        {!isUser && pendingRecommended.length === 0 && (
+          <DownloadEstimateButton
+            items={itemsToDisplay}
+            projectEstimate={message.project_estimate}
+            estimationSummary={message.estimation_summary}
+            variant="in-app"
+          />
         )}
 
         {/* Added to Cart Items List (Web & Mobile) */}
@@ -600,16 +671,6 @@ export default function MessageBubble({
           <SuggestionChips
             suggestions={message.suggestions}
             onAddSuggestion={onAddSuggestion}
-            variant="in-app"
-          />
-        )}
-
-        {/* 3. Download Estimate Button */}
-        {!isUser && (
-          <DownloadEstimateButton
-            items={itemsToDisplay}
-            projectEstimate={message.project_estimate}
-            estimationSummary={message.estimation_summary}
             variant="in-app"
           />
         )}
