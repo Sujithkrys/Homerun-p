@@ -65,6 +65,28 @@ function parseInlineFormatting(text: string): React.ReactNode[] {
   });
 }
 
+// A markdown table separator row ("|---|---|") or a lone "---" divider — this
+// WhatsApp-style bubble has no table layout, so these would otherwise render
+// as literal, broken pipe/dash characters. Drop them entirely.
+function isTableSeparatorLine(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.length > 0 && /^[|:\s-]+$/.test(trimmed) && trimmed.includes("-");
+}
+
+// A markdown table data row ("| Product | Qty | Unit |"). There's no table
+// UI here, so collapse the non-empty cells into one line — a safety net for
+// when the model emits a table despite being told not to.
+function tableRowCells(line: string): string[] | null {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) return null;
+  const cells = trimmed
+    .slice(1, -1)
+    .split("|")
+    .map((c) => c.trim())
+    .filter((c) => c.length > 0);
+  return cells.length > 0 ? cells : null;
+}
+
 /**
  * WhatsAppText converts raw AI message markdown into WhatsApp business chat style:
  * 1. Bold: **text** -> <strong> (no literal asterisks shown)
@@ -84,8 +106,29 @@ export function WhatsAppText({ text }: { text: string }) {
       {lines.map((rawLine, i) => {
         const line = rawLine;
 
+        // 0. Markdown table rows/separators have no table layout here —
+        // drop separator rows, collapse data rows into one line, instead of
+        // showing raw "|"/"-" characters. Safety net; the model is also
+        // told not to emit tables in the first place.
+        if (isTableSeparatorLine(line)) {
+          return null;
+        }
+        const cells = tableRowCells(line);
+        if (cells) {
+          return (
+            <div key={i} className="leading-relaxed">
+              {cells.join("  •  ")}
+            </div>
+          );
+        }
+
+        // A malformed/one-sided table row (starts with "|" but never closes
+        // with one) doesn't match tableRowCells — strip just the stray
+        // leading pipe so it doesn't show up as a literal "|" in the bubble.
+        const noStrayPipe = line.trim().endsWith("|") ? line : line.replace(/^(\s*)\|\s*/, "$1");
+
         // 1. Headers: #, ##, ### -> strip hashes and render as bold line
-        const headerMatch = line.match(/^#{1,6}\s+(.*)/);
+        const headerMatch = noStrayPipe.match(/^#{1,6}\s+(.*)/);
         if (headerMatch) {
           return (
             <div key={i} className="font-bold text-slate-900 my-0.5">
@@ -95,7 +138,7 @@ export function WhatsAppText({ text }: { text: string }) {
         }
 
         // 2. Bullet lists: lines starting with "- " or "* " -> "• "
-        const bulletMatch = line.match(/^(\s*)(?:-\s+|\*\s+)(.*)/);
+        const bulletMatch = noStrayPipe.match(/^(\s*)(?:-\s+|\*\s+)(.*)/);
         if (bulletMatch) {
           return (
             <div key={i} className="flex items-start gap-1.5 my-0.5 ml-0.5">
@@ -108,7 +151,7 @@ export function WhatsAppText({ text }: { text: string }) {
         }
 
         // 3. Numbered lists: lines starting with "1. " or "2. "
-        const numMatch = line.match(/^(\s*)(\d+\.)\s+(.*)/);
+        const numMatch = noStrayPipe.match(/^(\s*)(\d+\.)\s+(.*)/);
         if (numMatch) {
           return (
             <div key={i} className="flex items-start gap-1.5 my-0.5 ml-0.5">
@@ -123,14 +166,14 @@ export function WhatsAppText({ text }: { text: string }) {
         }
 
         // 4. Empty line -> space spacing
-        if (line.trim() === "") {
+        if (noStrayPipe.trim() === "") {
           return <div key={i} className="h-2" />;
         }
 
         // 5. Standard line with bold/italic parsing
         return (
           <div key={i} className="leading-relaxed">
-            {parseInlineFormatting(line)}
+            {parseInlineFormatting(noStrayPipe)}
           </div>
         );
       })}

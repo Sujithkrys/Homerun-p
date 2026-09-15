@@ -156,12 +156,66 @@ interface MessageBubbleProps {
   onUpdateQuantity?: (productId: string, qty: number) => void;
 }
 
+// A markdown table separator row, e.g. "|---|---|---|" or "---" alone — this
+// chat bubble has no table layout to draw, so these render as literal,
+// broken-looking pipe/dash characters if left alone. Drop them entirely.
+function isTableSeparatorLine(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.length > 0 && /^[|:\s-]+$/.test(trimmed) && trimmed.includes("-");
+}
+
+// A markdown table data row, e.g. "| Product | Qty | Unit |". There's no
+// table UI here, so render it as a single line joining the non-empty cells
+// — imperfect, but readable, instead of showing raw pipe characters. This is
+// a safety net; the system prompt also instructs the model not to emit
+// tables in the first place.
+function tableRowCells(line: string): string[] | null {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) return null;
+  const cells = trimmed
+    .slice(1, -1)
+    .split("|")
+    .map((c) => c.trim())
+    .filter((c) => c.length > 0);
+  return cells.length > 0 ? cells : null;
+}
+
 // Simple markdown formatter helper for bold, bullets, and line breaks
 function renderFormattedText(text: string) {
   const lines = text.split("\n");
   return lines.map((line, i) => {
+    // Strip lone "---" dividers and markdown table separator rows outright.
+    if (isTableSeparatorLine(line)) {
+      return null;
+    }
+
+    // Markdown table data rows have no renderable table here — collapse the
+    // cells into one bold-free line instead of showing raw "|" characters.
+    const cells = tableRowCells(line);
+    if (cells) {
+      return (
+        <div key={i} className="leading-relaxed">
+          {cells.join("  •  ")}
+        </div>
+      );
+    }
+
+    // A malformed/one-sided table row (starts with "|" but never closes with
+    // one, e.g. a footnote line the model tacked onto a table) doesn't match
+    // tableRowCells above — strip just the stray leading pipe so it doesn't
+    // show up as a literal "|" in front of otherwise-normal text.
+    const noStrayPipe = line.trim().endsWith("|") ? line : line.replace(/^(\s*)\|\s*/, "$1");
+
+    // Blockquote lines (markdown ">") — strip the marker, render as plain text.
+    const quoteMatch = noStrayPipe.match(/^\s*>\s?(.*)/);
+    const dequoted = quoteMatch ? quoteMatch[1] : noStrayPipe;
+
+    // Headers ("#", "##", ...) — strip the hashes, render as a bold line.
+    const headerMatch = dequoted.match(/^\s*#{1,6}\s+(.*)/);
+    const effectiveLine = headerMatch ? `**${headerMatch[1]}**` : dequoted;
+
     // Process markdown bold **text**
-    const parts = line.split(/(\*\*.*?\*\*)/g);
+    const parts = effectiveLine.split(/(\*\*.*?\*\*)/g);
     const formattedParts = parts.map((part, pIdx) => {
       if (part.startsWith("**") && part.endsWith("**")) {
         return (
@@ -181,7 +235,7 @@ function renderFormattedText(text: string) {
     });
 
     // Handle bullet items
-    if (line.trim().startsWith("- ") || line.trim().startsWith("• ")) {
+    if (effectiveLine.trim().startsWith("- ") || effectiveLine.trim().startsWith("• ")) {
       return (
         <div key={i} className="flex items-start gap-1.5 ml-1 my-0.5">
           <span className="text-slate-400 select-none">•</span>
@@ -191,7 +245,7 @@ function renderFormattedText(text: string) {
     }
 
     // Numbered lists e.g. "1. "
-    const numMatch = line.trim().match(/^(\d+)\.\s+(.*)/);
+    const numMatch = effectiveLine.trim().match(/^(\d+)\.\s+(.*)/);
     if (numMatch) {
       return (
         <div key={i} className="flex items-start gap-1.5 ml-1 my-0.5">
@@ -204,7 +258,7 @@ function renderFormattedText(text: string) {
     }
 
     // Empty lines
-    if (line.trim() === "") {
+    if (effectiveLine.trim() === "") {
       return <div key={i} className="h-2" />;
     }
 
